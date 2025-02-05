@@ -10,9 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/icons": "^5.6.0",
     "antd": "^5.23.2",
+    "daisyui": "^4.12.23",
+    "epubjs": "^0.3.93",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-reader": "^2.0.12"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
