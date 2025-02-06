@@ -19,7 +19,7 @@ const ReaderPage = ({ book }) => {
   return (
     <ConfigProvider>
       <div style={{ height: '100vh', width: '100vw' }}>
-        <BookReader bookPath={blobUrl} theme="light" navigation={{}} />
+        <BookReader bookUrl={blobUrl} theme="light" navigation={{}} />
       </div>
     </ConfigProvider>
   );
