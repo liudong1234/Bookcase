@@ -1,34 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useContext } from "react";
 import { Menu, Layout } from "antd";
 import { BookTwoTone, HeartTwoTone, HighlightTwoTone   } from "@ant-design/icons";
 
 import Bookshelf from "./BookShelf";
+import { MenuContext } from "../contexts/MenuContext";
 
+const { Sider } = Layout;
 
-const { Sider, Content } = Layout;
-
-const SideView = ({ theme, book }) => {
+const SideBar = ({ theme, book, coverUrl }) => {
   const [collapsed, setCollapsed] = useState(false);
 
-  const [currentView, setCurrentView] = useState('1');
+  const { setSelectedMenu } = useContext(MenuContext);
 
   const handleMenuClick = (key) => {
-    setCurrentView(key);
+    setSelectedMenu(key.key);
   }
-
-  const renderContent =() => {
-    switch (currentView) {
-      case '1':
-        return <Bookshelf books={book} />;
-      case '2':
-        return <></>;
-      case '3':
-        return <></>;
-      default:
-        return <Bookshelf books={book} />;
-    }
-  }
-
 
   return (
     <>
@@ -58,11 +44,8 @@ const SideView = ({ theme, book }) => {
       />
 
     </Sider>
-    <Content>
-      {renderContent()}
-    </Content>
     </>
   );
 };
 
-export default SideView;
+export default SideBar;

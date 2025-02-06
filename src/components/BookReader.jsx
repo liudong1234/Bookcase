@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Empty } from 'antd';
-import { ReadOutlined } from '@ant-design/icons';
-import ePub from 'epubjs';
+import Epub from 'epubjs';
 
 const BookReader = ({ bookPath, theme, navigation }) => {
     const [book, setBook] = useState(null);
@@ -29,18 +28,20 @@ const BookReader = ({ bookPath, theme, navigation }) => {
             if (rendition) {
                 rendition.destroy();
             }
-
+            
             // 初始化新的电子书
-            const newBook = ePub(`/books/${bookPath}`);
+            const newBook = Epub(bookPath);
+            console.log("bookreader", newBook);
+            
             setBook(newBook);
-
+            
             // 渲染电子书内容
             const newRendition = newBook.renderTo(readerRef.current, {
                 flow: 'scrolled',
                 width: '100%',
                 height: '100%'
             });
-
+            
             // 设置主题
             newRendition.themes.default({
                 'body': {
@@ -54,7 +55,7 @@ const BookReader = ({ bookPath, theme, navigation }) => {
             });
             // 应用主题
             newRendition.themes.select(theme);
-
+            
             // 监听滚动进度
             const handleScroll = () => {
                 const currentLocation = newRendition.currentLocation();
@@ -65,7 +66,7 @@ const BookReader = ({ bookPath, theme, navigation }) => {
                     setProgress(progress);
                 }
             };
-
+            
             // 恢复之前的阅读进度
             const savedLocation = localStorage.getItem(`book-${bookPath}-location`);
             if (savedLocation) {
@@ -75,12 +76,12 @@ const BookReader = ({ bookPath, theme, navigation }) => {
                     console.error('Failed to restore location:', error);
                 }
             }
-
+            
             // 滚动事件监听
             newRendition.on('scroll', handleScroll);
             
             setRendition(newRendition);
-
+            newRendition.display();
             // 清理函数
             return () => {
                 if (newRendition) {
@@ -118,20 +119,7 @@ const BookReader = ({ bookPath, theme, navigation }) => {
             }
         }
     };
-
-    if (!bookPath) {
-        return (
-            <div style={{ 
-                height: '90vh', display: 'flex', alignContent: 'center', justifyContent:'center', 
-                alignItems: 'center'
-                }} >
-                <Empty
-                    description="请选择要阅读的书籍"
-                />
-            </div>
-        );
-    }
-
+    
     return (
         <div style={{
             width: '100%',
