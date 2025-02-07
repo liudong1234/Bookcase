@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import BookReader from './BookReader';
 import { ConfigProvider } from 'antd';
@@ -7,7 +7,7 @@ import 'antd/dist/reset.css';
 // 创建一个独立的阅读器页面组件
 const ReaderPage = ({ book }) => {
   const [blobUrl, setBlobUrl] = useState(null);
-
+  const containerRef = useRef(null);
   useEffect(() => {
     const url = URL.createObjectURL(book);
     setBlobUrl(url);
@@ -18,8 +18,8 @@ const ReaderPage = ({ book }) => {
   if (!blobUrl) return <p>加载中...</p>;
   return (
     <ConfigProvider>
-      <div style={{ height: '100vh', width: '100vw' }}>
-        <BookReader bookUrl={blobUrl} theme="light" navigation={{}} />
+      <div ref={containerRef} style={{ height: '100vh', width: '100vw' }}>
+        <BookReader bookUrl={blobUrl} containerRef={containerRef} theme="light" navigation={{}} />
       </div>
     </ConfigProvider>
   );
