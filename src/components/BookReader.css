@@ -1,0 +1,81 @@
+/* BookReader.css */
+.reader-layout {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.reader-header {
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.reader-tools {
+    display: flex;
+    gap: 8px;
+}
+
+.toc-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.toc-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* 适配移动端 */
+@media (max-width: 768px) {
+    .reader-tools {
+        gap: 4px;
+    }
+
+    .reader-header h3 {
+        font-size: 16px;
+    }
+}
+
+/* BookReader.css 中添加 */
+.toc-item {
+    transition: background-color 0.3s;
+}
+
+.toc-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.toc-subitems {
+    transition: max-height 0.3s ease-in-out;
+}
+
+/* 深色主题支持 */
+.dark-theme .toc-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.my-toc-drawer {
+    .ant-drawer-body {
+        padding: 0;
+    }
+}
+
+/* 翻页动画 */
+.flip-animation {
+    animation: flip 0.3s ease-in-out;
+}
+
+@keyframes flip {
+    0% {
+        transform: perspective(1000px) rotateY(0deg);
+    }
+    50% {
+        transform: perspective(1000px) rotateY(-90deg);
+    }
+    100% {
+        transform: perspective(1000px) rotateY(0deg);
+    }
+}

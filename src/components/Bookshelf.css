@@ -1,0 +1,86 @@
+/* Bookshelf.css */
+.book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.book-card {
+    position: relative;
+}
+
+.cover-container {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    /* 根据封面图大小调整 */
+    overflow: hidden;
+}
+
+.cover-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cover-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.book-card:hover .cover-overlay {
+    opacity: 1;
+}
+
+.cover-overlay button {
+    background: linear-gradient(135deg, #ff7eb3, #8e44ad, #3498db);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: bold;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s ease-in-out;
+    box-shadow: 0 0 10px rgba(255, 126, 179, 0.6);
+}
+
+.cover-overlay button::before {
+    content: "";
+    position: absolute;
+    top: -100%;
+    left: -100%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.3) 10%, rgba(255,255,255,0) 50%);
+    transition: all 0.6s ease-in-out;
+}
+
+.cover-overlay button:hover {
+    background: linear-gradient(135deg, #ff9a8b, #ff6a88, #ff99ac);
+    box-shadow: 0 0 20px rgba(255, 153, 172, 0.8);
+    transform: scale(1.05);
+}
+
+.cover-overlay button:hover::before {
+    top: 0;
+    left: 0;
+}
+
+.cover-overlay button:active {
+    transform: scale(0.95);
+}
