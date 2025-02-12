@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Layout, Drawer, Select } from "antd";
-import { SettingFilled, UploadOutlined } from "@ant-design/icons";
+import { AppstoreTwoTone, UploadOutlined, ProfileTwoTone } from "@ant-design/icons";
 import SideBar from "./components/SideBar";
 import ContentView from "./components/ContentView";
 import { MenuProvider } from "./contexts/MenuContext";
@@ -14,7 +14,7 @@ const App = () => {
   const [theme, setTheme] = useState("light");
   const [bookfile, setBookfile] = useState(null);
   const [siderBarHidden, setSiderBarHidden] = useState(false);
-  const [openSettingDrawer, setOpenSettingDrawer] = useState(false);
+  const [bookshelfStyle, setBookshelfStyle] = useState(false);
   const [headerOpen, setHeaderOpen] = useState(true);
 
   const themes = {
@@ -24,11 +24,8 @@ const App = () => {
     cyberpunk: { name: "霓虹模式", color: "linear-gradient(135deg, #ff00ff, #8a2be2, #0000ff)", text: "#fff" },
   };
 
-  const showSettingDrawer = () => {
-    setOpenSettingDrawer(true);
-  }
-  const closeSettingDrawer = () => {
-    setOpenSettingDrawer(false);
+  const changeBookshelfStyle = () => {
+    setBookshelfStyle(!bookshelfStyle);//false格子， true列表
   }
   const handleThemeChange = (value) => {
     setTheme(value);
@@ -47,13 +44,13 @@ const App = () => {
     setHeaderOpen(!value);
     setSiderBarHidden(value);
   }
-  
+
   return (
     <Layout style={{ minHeight: "100vh", background: themes[theme].color }}>
       {headerOpen && (
         <Header className="app-header">
           <h1>Bookcase 📚</h1>
-          <div style={{ display: "flex", alignItems: "center", gap: "30px"}}>
+          <div style={{ display: "flex", alignItems: "center", gap: "30px" }}>
             <div>
               <input
                 type="file"
@@ -98,7 +95,14 @@ const App = () => {
             </div>
 
             <div>
-              <span className="settting-span" onClick={() => showSettingDrawer() }><SettingFilled/></span>
+              <span className="settting-span" onClick={() => changeBookshelfStyle()}>
+                {
+                  bookshelfStyle && (<AppstoreTwoTone />)
+                }
+                {
+                  !bookshelfStyle && (<ProfileTwoTone />)
+                }
+              </span>
             </div>
           </div>
         </Header>
@@ -107,23 +111,16 @@ const App = () => {
 
       <Layout>
         <MenuProvider>
-          <SideBar theme={theme} hidden={siderBarHidden}/>
+          <SideBar theme={theme} hidden={siderBarHidden} />
           <Content>
-            <ContentView bookfile={bookfile} onBookParsed={handleBookParsed} onSiderBarHidden={handleHideSiderBar} theme={theme} />
+            <ContentView
+              bookfile={bookfile}
+              theme={theme} 
+              bookshelfSettings={{handleBookParsed, handleHideSiderBar, bookshelfStyle}}
+            />
           </Content>
         </MenuProvider>
       </Layout>
-
-      <Drawer
-        title="Settings"
-        placement={'top'}
-        open={openSettingDrawer}
-        onClose={closeSettingDrawer}
-        key={'top'}
-        extra={<button>关闭</button>}
-      >
-        <span>空</span>
-      </Drawer>
 
     </Layout>
   );

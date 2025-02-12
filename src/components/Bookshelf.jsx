@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, message } from 'antd';
+import { Card, message, Avatar, List, Button } from 'antd';
 import BookReader from './BookReader';
 import Epub from 'epubjs';
 const { Meta } = Card;
@@ -107,7 +107,10 @@ const dbOperations = {
   }
 };
 
-const Bookshelf = ({ bookfile, onBookParsed, onSiderBarHidden, theme }) => {
+const Bookshelf = ({ bookfile, theme, bookshelfSettings }) => {
+
+  const { handleBookParsed, handleHideSiderBar, bookshelfStyle } = bookshelfSettings;
+
   const [currentBook, setCurrentBook] = useState(null);
   const [books, setBooks] = useState([]);
   const [bookCovers, setBookCovers] = useState({});
@@ -140,8 +143,8 @@ const Bookshelf = ({ bookfile, onBookParsed, onSiderBarHidden, theme }) => {
 
       try {
         // 检查书籍是否已存在
-        const isBookExists = books.some(b => 
-          b.name === bookfile.name && 
+        const isBookExists = books.some(b =>
+          b.name === bookfile.name &&
           b.size === bookfile.size
         );
 
@@ -167,7 +170,7 @@ const Bookshelf = ({ bookfile, onBookParsed, onSiderBarHidden, theme }) => {
         const book = new Epub(bookfile);
         await book.ready;
         const coverUrl = await book.coverUrl();
-        
+
         // 存储封面
         if (coverUrl) {
           const response = await fetch(coverUrl);
@@ -186,7 +189,7 @@ const Bookshelf = ({ bookfile, onBookParsed, onSiderBarHidden, theme }) => {
       } catch (error) {
         message.error('书籍添加失败');
       } finally {
-        onBookParsed?.();
+        handleBookParsed?.();
       }
     };
 
@@ -210,49 +213,75 @@ const Bookshelf = ({ bookfile, onBookParsed, onSiderBarHidden, theme }) => {
       message.error('删除失败');
     }
   };
-
+  
   // 渲染书架
   return (
     <div>
       {currentBook ? (
-        <BookReader 
-          book={currentBook.file} 
-          onClose={() => {setCurrentBook(null); onSiderBarHidden(false);}}
+        <BookReader
+          book={currentBook.file}
+          onClose={() => { setCurrentBook(null); handleHideSiderBar(false); }}
         />
       ) : (
         <div className="bookshelf-container">
           {books.length === 0 ? (
             <p>暂无书籍</p>
           ) : (
-            <div className="book-grid">
-              {books.map(book => (
-                <div
-                  key={book.id}
-                  className="book-card"
-                  onMouseEnter={() => setHoveredBookId(book.id)} // 悬浮时设置 hoveredBookId
-                  onMouseLeave={() => setHoveredBookId(null)} // 离开时清除 hoveredBookId
-                >
-                  <Card
-                    hoverable
-                    cover={
-                      <div className="cover-container">
-                        <img alt="封面" src={bookCovers[book.id]} />
-                        {hoveredBookId === book.id && ( // 悬浮时显示操作按钮
-                          <div className="cover-overlay">
-                            <button onClick={() => {setCurrentBook(book); onSiderBarHidden(true);}}>阅读</button>
-                            <button onClick={() => handleDeleteBook(book.id)}>删除</button>
-                          </div>
-                        )}
+            <div>
+              {
+                bookshelfStyle && (
+                  <div className="book-grid">
+                    {books.map(book => (
+                      <div
+                        key={book.id}
+                        className="book-card"
+                        onMouseEnter={() => setHoveredBookId(book.id)} // 悬浮时设置 hoveredBookId
+                        onMouseLeave={() => setHoveredBookId(null)} // 离开时清除 hoveredBookId
+                      >
+                        <Card
+                          hoverable
+                          cover={
+                            <div className="cover-container">
+                              <img alt="封面" src={bookCovers[book.id]} />
+                              {hoveredBookId === book.id && ( // 悬浮时显示操作按钮
+                                <div className="cover-overlay">
+                                  <button onClick={() => { setCurrentBook(book); handleHideSiderBar(true); }}>阅读</button>
+                                  <button onClick={() => handleDeleteBook(book.id)}>删除</button>
+                                </div>
+                              )}
+                            </div>
+                          }
+                        >
+                          <Meta
+                            title={book.name}
+                            description={`${book.type.toUpperCase()} · ${formatFileSize(book.size)}`}
+                          />
+                        </Card>
                       </div>
-                    }
-                  >
-                    <Meta 
-                      title={book.name} 
-                      description={`${book.type.toUpperCase()} · ${formatFileSize(book.size)}`} 
-                    />
-                  </Card>
-                </div>
-              ))}
+                    ))}
+                  </div>
+                )
+              }
+              {
+                !bookshelfStyle && (
+                  <List
+                    className='bookshelf-booklist'
+                    itemLayout="horizontal"
+                    dataSource={books}
+                    renderItem={(item, index) => (
+                      <List.Item onClick={() => {setCurrentBook(item); handleHideSiderBar(true);}} 
+                        actions={[<Button onClick={(event) => { event.stopPropagation(); handleDeleteBook(item.id)}}>删除书籍</Button>]}>
+                        <List.Item.Meta
+                          avatar={<Avatar src={bookCovers[item.id]} />}
+                          title={item.name}
+                          description={`${item.type.toUpperCase()} · ${formatFileSize(item.size)}`}
+                        />
+                      </List.Item>
+                    )}
+                  />
+                )
+              }
+
             </div>
           )}
         </div>

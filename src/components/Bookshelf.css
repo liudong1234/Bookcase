@@ -84,3 +84,9 @@
 .cover-overlay button:active {
     transform: scale(0.95);
 }
+
+.bookshelf-booklist {
+    padding-left: 15px;
+    padding-top: 15px;
+    cursor: pointer;
+}

@@ -1,146 +1,77 @@
+// BookReader.jsx
 import { useState, useRef, useEffect } from "react";
-import { Layout, Button, Drawer, Tooltip, message, Select } from "antd";
+import { Layout, Button, Drawer, Tooltip, Row, Col, Select, Modal, Slider, InputNumber } from "antd";
 import {
   ArrowLeftOutlined,
   MenuOutlined,
-  FontSizeOutlined,
   LeftOutlined,
   RightOutlined,
   FullscreenOutlined,
   FullscreenExitOutlined,
   CiCircleTwoTone,
+  SettingTwoTone,
 } from "@ant-design/icons";
-import Epub from "epubjs";
+import useEpubParser from "./parser/EpubParser";
 import "./BookReader.css";
 
 const { Header, Content } = Layout;
 
-// IndexedDB 配置
-const DB_NAME = "BookSettings";
-const DB_VERSION = 1;
-const STORE_NAMES = {
-  FONTSIZE: "books",
-  FONTFAMILY: "covers",
-};
-
 const BookReader = ({ book, onClose }) => {
   const [fontSize, setFontSize] = useState(16);
+  const [fontFamily, setFontFamily] = useState('SimSun');
   const [theme, setTheme] = useState("light");
-  const [showToc, setShowToc] = useState(false);
-  const [toc, setToc] = useState([]);
-  const [currentCfi, setCurrentCfi] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [rendition, setRendition] = useState(null);
-  const [expandedItems, setExpandedItems] = useState({});
   const [readingMode, setReadingMode] = useState("paginated");
   const [managerMode, setManagerMode] = useState("default");
-  const [currentChapter, setCurrentChapter] = useState('');
-  const [currentTocItem, setCurrentTocItem] = useState(null);
+  const [openResponsive, setOpenResponsive] = useState(false);
+
+  const [showToc, setShowToc] = useState(false);
+  const [expandedItems, setExpandedItems] = useState({});
 
   const viewerRef = useRef(null);
-  const bookRef = useRef(null);
+
+  const {
+    toc,
+    currentCfi,
+    rendition,
+    currentChapter,
+    setCurrentCfi,
+    setCurrentChapter,
+  } = useEpubParser(book, readingMode, managerMode, theme, fontSize, fontFamily, viewerRef);
 
   // 生成唯一标识符的辅助函数（根据目录路径）
   const getItemKey = (item, parentPath = "") => {
     const currentPath = `${parentPath}-${item.id || item.label}`;
     return currentPath;
   };
-  // 初始化电子书
+
   useEffect(() => {
-    const initBook = async () => {
-      try {
-        if (!book) return;
-
-        bookRef.current = new Epub(book);
-
-        // 等待书籍加载完成
-        await bookRef.current.ready;
-
-        // 创建渲染器
-        const rendition = bookRef.current.renderTo(viewerRef.current, {
-          width: "100%",
-          height: "100%",
-          spread: "none",
-          flow: readingMode, //paginated  scrolled
-          manager: managerMode,
-        });
-        setRendition(rendition);
-    
-        // 加载目录
-        const navigation = await bookRef.current.loaded.navigation;
-        setToc(navigation.toc);
-
-        // 恢复上次阅读位置
-        const savedCfi = localStorage.getItem(`book-progress-${book.name}`);
-        if (savedCfi) {
-          rendition.display(savedCfi);
-        } else {
-          rendition.display();
-        }
-
-        // 设置主题
-        rendition.themes.default({
-          body: {
-            "font-size": `${fontSize}px`,
-            "background-color": theme === "light" ? "#fff" : "#1f1f1f",
-            color: theme === "light" ? "#000" : "#fff",
-          },
-        });
-
-        // 监听位置变化(垂直阅读模式)
-        rendition.on("relocated", async (location) => {
-          setCurrentCfi(location.start.cfi);
-          localStorage.setItem(
-            `book-progress-${book.name}`,
-            location.start.cfi
-          );
-          
-          // Get current chapter href
-          const chapter = await bookRef.current.spine.get(location.start.cfi);
-          if (chapter) {
-            setCurrentChapter(chapter.href);
-            const currentItem = findTocItemByHref(navigation.toc, chapter.href);
-            setCurrentTocItem(currentItem);
-            
-            // Expand parent items when chapter changes
-            expandParentItems(navigation.toc, chapter.href);
-          }
-        });
-      } catch (error) {
-        console.error("Error initializing book:", error);
-        message.error("加载书籍失败，请重试");
-      }
-    };
-
-    initBook();
-
+    window.addEventListener("keyup", handleKeyPress);
     return () => {
-      if (bookRef.current) {
-        bookRef.current.destroy();
-      }
+      window.removeEventListener("keyup", handleKeyPress);
     };
-  }, [book, readingMode, managerMode]);
+  }, [rendition]);
 
-  // 更新字体大小
   useEffect(() => {
-    if (rendition) {
-      rendition.themes.default({
-        body: { "font-size": `${fontSize}px !important` },
-      });
+    if (showToc && currentChapter) {
+      const timer = setTimeout(() => {
+        const currentElement = document.querySelector('[data-current-chapter="true"]');
+        if (currentElement) {
+          currentElement.scrollIntoView({ block: "nearest", behavior: "auto" });
+        }
+      }, 50);
+      return () => clearTimeout(timer);
     }
-  }, [fontSize]);
+  }, [showToc, currentChapter, expandedItems]);
 
-  // 更新主题
+  // 在打开目录时强制更新展开状态
   useEffect(() => {
-    if (rendition) {
-      rendition.themes.default({
-        body: {
-          "background-color": theme === "light" ? "#fff" : "#1f1f1f",
-          color: theme === "light" ? "#000" : "#fff",
-        },
-      });
+    if (showToc && currentChapter) {
+      const expanded = {};
+      expandParentItems(toc, currentChapter, "", expanded);
+      setExpandedItems(prev => ({ ...prev, ...expanded }));
     }
-  }, [theme]);
+  }, [showToc, currentChapter, toc]);
 
   // 切换全屏
   const toggleFullscreen = () => {
@@ -150,16 +81,6 @@ const BookReader = ({ book, onClose }) => {
     } else {
       document.exitFullscreen();
       setIsFullscreen(false);
-    }
-    console.log(rendition);
-  };
-
-  // 翻页功能
-  const handleKeyPress = (e) => {
-    if (e.key === "ArrowLeft") {
-      rendition?.prev();
-    } else if (e.key === "ArrowRight") {
-      rendition?.next();
     }
   };
 
@@ -171,12 +92,14 @@ const BookReader = ({ book, onClose }) => {
     rendition?.prev();
   };
 
-  useEffect(() => {
-    window.addEventListener("keyup", handleKeyPress);
-    return () => {
-      window.removeEventListener("keyup", handleKeyPress);
-    };
-  }, [rendition]);
+  // 翻页功能
+  const handleKeyPress = (e) => {
+    if (e.key === "ArrowLeft") {
+      handlePrevPage();
+    } else if (e.key === "ArrowRight") {
+      handleNextPage();
+    }
+  };
 
   // 处理目录点击
   const handleTocSelect = (href) => {
@@ -195,7 +118,6 @@ const BookReader = ({ book, onClose }) => {
     } else {
       setManagerMode("default");
     }
-    console.log("manager", managerMode);
     setReadingMode(value);
     rendition?.flow(value);
   };
@@ -215,35 +137,33 @@ const BookReader = ({ book, onClose }) => {
   };
 
   // Function to expand parent items of current chapter
-  const expandParentItems = (items, href, parentPath = "") => {
-    const newExpandedItems = { ...expandedItems };
-    
+  const expandParentItems = (items, href, parentPath = "", expanded = {}) => {
     for (const item of items) {
       const itemKey = getItemKey(item, parentPath);
-      
+
       if (item.href === href) {
-        // Found the current item, expand all its parents
+        // 展开所有父路径
         let currentPath = parentPath;
         while (currentPath) {
-          newExpandedItems[currentPath] = true;
+          expanded[currentPath] = true;
           currentPath = currentPath.substring(0, currentPath.lastIndexOf("-"));
         }
         return true;
       }
-      
+
       if (item.subitems?.length > 0) {
         const found = expandParentItems(
           item.subitems,
           href,
-          getItemKey(item, parentPath)
+          getItemKey(item, parentPath),
+          expanded
         );
         if (found) {
-          newExpandedItems[itemKey] = true;
+          expanded[itemKey] = true;
           return true;
         }
       }
     }
-    
     return false;
   };
 
@@ -282,6 +202,7 @@ const BookReader = ({ book, onClose }) => {
       <div className="toc-node">
         <div
           className="toc-item"
+          data-current-chapter={isCurrentChapter ? 'true' : undefined}
           style={{
             padding: "8px 16px",
             paddingLeft: `${16 + level * 20}px`,
@@ -319,12 +240,12 @@ const BookReader = ({ book, onClose }) => {
             style={{
               flex: 1,
               color: isCurrentChapter
-              ? theme === "light"
-                ? "#1890ff"
-                : "#40a9ff"
-              : theme === "light"
-              ? "#000"
-              : "#fff",
+                ? theme === "light"
+                  ? "#1890ff"
+                  : "#40a9ff"
+                : theme === "light"
+                  ? "#000"
+                  : "#fff",
               fontSize: 14 - level * 0.5,
               fontWeight: isCurrentChapter ? 500 : 400,
             }}
@@ -350,6 +271,12 @@ const BookReader = ({ book, onClose }) => {
     );
   };
 
+  const onChangeFontSize = (newValue) => {
+    setFontSize(newValue);
+  };
+  const onChangeFontFamily = (newValue) => {
+    setFontFamily(newValue);
+  }
   return (
     <Layout
       className="reader-layout"
@@ -361,9 +288,6 @@ const BookReader = ({ book, onClose }) => {
       <Header
         className="reader-header"
         style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "0 16px",
           background: theme === "light" ? "#fff" : "#1f1f1f",
           borderBottom: "1px solid #e8e8e8",
         }}
@@ -391,12 +315,6 @@ const BookReader = ({ book, onClose }) => {
           <Tooltip title="下一页">
             <Button icon={<RightOutlined />} onClick={() => handleNextPage()} />
           </Tooltip>
-          <Tooltip title={`${fontSize}px`}>
-            <Button
-              icon={<FontSizeOutlined />}
-              onClick={() => setFontSize((prev) => prev + 1)}
-            />
-          </Tooltip>
           <Tooltip title="切换主题">
             <Button
               onClick={() =>
@@ -406,6 +324,73 @@ const BookReader = ({ book, onClose }) => {
               {theme === "light" ? "🌙" : "☀️"}
             </Button>
           </Tooltip>
+          <Tooltip title="目录">
+            <Button icon={<MenuOutlined />} onClick={() => setShowToc(true)} />
+          </Tooltip>
+          <Tooltip title="全屏">
+            <Button
+              icon={
+                isFullscreen ? (
+                  <FullscreenExitOutlined />
+                ) : (
+                  <FullscreenOutlined />
+                )
+              }
+              onClick={toggleFullscreen}
+            />
+          </Tooltip>
+          <Tooltip title="设置">
+            <Button icon={<SettingTwoTone />} onClick={() => setOpenResponsive(true)} />
+          </Tooltip>
+        </div>
+      </Header>
+
+      <Content style={{ position: "relative", overflow: "hidden" }}>
+        <div ref={viewerRef} style={{ width: "100%", height: "100%" }} />
+      </Content>
+
+      <Drawer
+        title="目录"
+        placement="left"
+        open={showToc}
+        onClose={() => setShowToc(false)}
+        width={300}
+        styles={{
+          background: theme === "light" ? "#fff" : "#1f1f1f",
+        }}
+        className="my-toc-drawer"
+      >
+        <div
+          className="toc-list"
+          style={{
+            height: "100%",
+            overflow: "auto",
+            background: theme === "light" ? "#fff" : "#1f1f1f",
+          }}
+        >
+          {toc.map((item, index) => (
+            <TocItem key={getItemKey(item)} item={item} level={0} />
+          ))}
+        </div>
+      </Drawer>
+
+      <Modal
+        title="页面设置"
+        centered
+        open={openResponsive}
+        onOk={() => setOpenResponsive(false)}
+        onCancel={() => setOpenResponsive(false)}
+        width={{
+          xs: '90%',
+          sm: '80%',
+          md: '70%',
+          lg: '60%',
+          xl: '50%',
+          xxl: '40%',
+        }}
+      >
+        <Row>
+          <span style={{ fontSize: '14px', marginRight: '10px' }}>阅读模式</span>
           <Tooltip title="阅读模式">
             <Select
               defaultValue="平滑"
@@ -441,54 +426,65 @@ const BookReader = ({ book, onClose }) => {
               ]}
             />
           </Tooltip>
-          <Tooltip title="目录">
-            <Button icon={<MenuOutlined />} onClick={() => setShowToc(true)} />
-          </Tooltip>
-          <Tooltip title="全屏">
-            <Button
-              icon={
-                isFullscreen ? (
-                  <FullscreenExitOutlined />
-                ) : (
-                  <FullscreenOutlined />
-                )
-              }
-              onClick={toggleFullscreen}
+        </Row>
+        <Row>
+          <span style={{ fontSize: '14px', marginRight: '10px' }}>字体</span>
+          <Tooltip title="阅读模式">
+            <Select
+              defaultValue="SimSun"
+              onChange={onChangeFontFamily}
+              style={{ width: 150 }}
+              options={[
+                { label: '微软雅黑', value: 'Microsoft YaHei' },
+                { label: '宋体', value: 'SimSun' },
+                { label: '黑体', value: 'SimHei' },
+                { label: '楷体', value: 'KaiTi' },
+                { label: '华文行楷', value: '华文行楷' },
+                { label: '仿宋', value: 'FangSong' },
+                { label: '幼圆', value: 'YouYuan' },
+                { label: '隶书', value: 'LiSu' },
+              ]}
             />
           </Tooltip>
-        </div>
-      </Header>
+        </Row>
+        <Row>
+          <Col span={12}>
+            <Slider
+              min={12}
+              max={50}
+              onChange={onChangeFontSize}
+              value={typeof fontSize === 'number' ? fontSize : 12}
+            />
+          </Col>
+          <Col span={4}>
+            <InputNumber
+              min={12}
+              max={50}
+              style={{
+                margin: '0 16px',
+              }}
+              value={fontSize}
+              onChange={onChangeFontSize}
+            />
+          </Col>
+        </Row>
+        <Row>
+          
+        </Row>
+      </Modal>
 
-      <Content style={{ position: "relative", overflow: "hidden" }}>
-          <div ref={viewerRef} style={{ width: "100%", height: "100%" }} />
-      </Content>
-
-      <Drawer
-        title="目录"
-        placement="left"
-        open={showToc}
-        onClose={() => setShowToc(false)}
-        width={300}
-        styles={{
-          background: theme === "light" ? "#fff" : "#1f1f1f",
-        }}
-        className="my-toc-drawer"
-      >
-        <div
-          className="toc-list"
-          style={{
-            height: "100%",
-            overflow: "auto",
-            background: theme === "light" ? "#fff" : "#1f1f1f",
-          }}
-        >
-          {toc.map((item, index) => (
-            <TocItem key={getItemKey(item)} item={item} level={0} />
-          ))}
-        </div>
-      </Drawer>
     </Layout>
   );
+};
+
+// 判断不同文件类型
+const getFileType = (file) => {
+  if (file?.name?.endsWith(".epub")) {
+    return "epub";
+  } else if (file?.name?.endsWith(".pdf")) {
+    return "pdf";
+  }
+  return null;
 };
 
 export default BookReader;
