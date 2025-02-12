@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Card, message, Avatar, List, Button } from 'antd';
-import BookReader from './BookReader';
 import Epub from 'epubjs';
 const { Meta } = Card;
-
+import { ParserFactory } from '../utils/bookParser/ParserFactory';
+import BookReader from './BookReader';
 import './Bookshelf.css'
 
 // IndexedDB 配置
@@ -108,7 +108,6 @@ const dbOperations = {
 };
 
 const Bookshelf = ({ bookfile, theme, bookshelfSettings }) => {
-
   const { handleBookParsed, handleHideSiderBar, bookshelfStyle } = bookshelfSettings;
 
   const [currentBook, setCurrentBook] = useState(null);
@@ -142,11 +141,18 @@ const Bookshelf = ({ bookfile, theme, bookshelfSettings }) => {
       if (!bookfile) return;
 
       try {
+        // 检查文件类型是否支持
+        if (!ParserFactory.isSupported(bookfile.type)) {
+          message.error('不支持的文件类型');
+          return;
+        }
+
         // 检查书籍是否已存在
         const isBookExists = books.some(b =>
           b.name === bookfile.name &&
           b.size === bookfile.size
         );
+        console.log('book', bookfile);
 
         if (isBookExists) {
           message.info('书籍已存在');
@@ -155,26 +161,14 @@ const Bookshelf = ({ bookfile, theme, bookshelfSettings }) => {
 
         // 生成书籍唯一ID
         const bookId = Date.now().toString();
+        const parser = ParserFactory.getParser(bookfile.type);
 
-        // 存储书籍文件
-        const bookData = {
-          id: bookId,
-          name: bookfile.name,
-          size: bookfile.size,
-          type: bookfile.type,
-          lastModified: bookfile.lastModified,
-          file: bookfile  // 直接存储 File 对象
-        };
-
-        // 解析封面
-        const book = new Epub(bookfile);
-        await book.ready;
-        const coverUrl = await book.coverUrl();
-
-        // 存储封面
-        if (coverUrl) {
-          const response = await fetch(coverUrl);
-          const coverBlob = await response.blob();
+        // 获取书籍元数据
+        const metadata = await parser.getMetadata(bookfile);
+        
+        // 获取并存储封面
+        const coverBlob = await parser.getCover(bookfile);
+        if (coverBlob) {
           await dbOperations.saveCover(bookId, coverBlob);
           setBookCovers(prev => ({
             ...prev,
@@ -182,7 +176,17 @@ const Bookshelf = ({ bookfile, theme, bookshelfSettings }) => {
           }));
         }
 
-        // 存储书籍元数据
+        // 存储书籍数据
+        const bookData = {
+          id: bookId,
+          name: bookfile.name,
+          size: bookfile.size,
+          type: bookfile.type,
+          lastModified: bookfile.lastModified,
+          metadata,
+          file: bookfile
+        };
+
         await dbOperations.saveBook(bookData);
         setBooks(prev => [...prev, bookData]);
         message.success('书籍添加成功！');

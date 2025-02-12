@@ -1,6 +1,17 @@
 // BookReader.jsx
 import { useState, useRef, useEffect } from "react";
-import { Layout, Button, Drawer, Tooltip, Row, Col, Select, Modal, Slider, InputNumber } from "antd";
+import {
+  Layout,
+  Button,
+  Drawer,
+  Tooltip,
+  Row,
+  Col,
+  Select,
+  Modal,
+  Slider,
+  InputNumber,
+} from "antd";
 import {
   ArrowLeftOutlined,
   MenuOutlined,
@@ -11,14 +22,14 @@ import {
   CiCircleTwoTone,
   SettingTwoTone,
 } from "@ant-design/icons";
-import useEpubParser from "./parser/EpubParser";
 import "./BookReader.css";
-
+import useEpubReader from "../utils/bookParserContent/EpubReader";
+import usePdfReader from "../utils/bookParserContent/PdfReader";
 const { Header, Content } = Layout;
 
 const BookReader = ({ book, onClose }) => {
   const [fontSize, setFontSize] = useState(16);
-  const [fontFamily, setFontFamily] = useState('SimSun');
+  const [fontFamily, setFontFamily] = useState("SimSun");
   const [theme, setTheme] = useState("light");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [readingMode, setReadingMode] = useState("paginated");
@@ -27,18 +38,30 @@ const BookReader = ({ book, onClose }) => {
 
   const [showToc, setShowToc] = useState(false);
   const [expandedItems, setExpandedItems] = useState({});
-
+  const PdfRender = null;
   const viewerRef = useRef(null);
+  const fileType = getFileType(book);
 
-  const {
-    toc,
-    currentCfi,
-    rendition,
-    currentChapter,
-    setCurrentCfi,
-    setCurrentChapter,
-  } = useEpubParser(book, readingMode, managerMode, theme, fontSize, fontFamily, viewerRef);
-
+  const {toc, currentCfi, rendition, currentChapter, setCurrentCfi, setCurrentChapter, }
+   = useEpubReader(book, readingMode, managerMode, theme, fontSize, fontFamily, viewerRef);
+  const {toc2,
+    currentCfi2,
+    rendition2,
+    currentChapter2,
+    setCurrentCfi2,
+    setCurrentChapter2,
+    renderPDF,
+    currentPage,
+    totalPages} =
+ usePdfReader(
+          book,
+          readingMode,
+          PdfRender,
+          theme,
+          fontSize,
+          fontFamily,
+          viewerRef
+        );
   // 生成唯一标识符的辅助函数（根据目录路径）
   const getItemKey = (item, parentPath = "") => {
     const currentPath = `${parentPath}-${item.id || item.label}`;
@@ -55,7 +78,9 @@ const BookReader = ({ book, onClose }) => {
   useEffect(() => {
     if (showToc && currentChapter) {
       const timer = setTimeout(() => {
-        const currentElement = document.querySelector('[data-current-chapter="true"]');
+        const currentElement = document.querySelector(
+          '[data-current-chapter="true"]'
+        );
         if (currentElement) {
           currentElement.scrollIntoView({ block: "nearest", behavior: "auto" });
         }
@@ -69,7 +94,7 @@ const BookReader = ({ book, onClose }) => {
     if (showToc && currentChapter) {
       const expanded = {};
       expandParentItems(toc, currentChapter, "", expanded);
-      setExpandedItems(prev => ({ ...prev, ...expanded }));
+      setExpandedItems((prev) => ({ ...prev, ...expanded }));
     }
   }, [showToc, currentChapter, toc]);
 
@@ -202,7 +227,7 @@ const BookReader = ({ book, onClose }) => {
       <div className="toc-node">
         <div
           className="toc-item"
-          data-current-chapter={isCurrentChapter ? 'true' : undefined}
+          data-current-chapter={isCurrentChapter ? "true" : undefined}
           style={{
             padding: "8px 16px",
             paddingLeft: `${16 + level * 20}px`,
@@ -244,8 +269,8 @@ const BookReader = ({ book, onClose }) => {
                   ? "#1890ff"
                   : "#40a9ff"
                 : theme === "light"
-                  ? "#000"
-                  : "#fff",
+                ? "#000"
+                : "#fff",
               fontSize: 14 - level * 0.5,
               fontWeight: isCurrentChapter ? 500 : 400,
             }}
@@ -276,7 +301,7 @@ const BookReader = ({ book, onClose }) => {
   };
   const onChangeFontFamily = (newValue) => {
     setFontFamily(newValue);
-  }
+  };
   return (
     <Layout
       className="reader-layout"
@@ -340,14 +365,23 @@ const BookReader = ({ book, onClose }) => {
             />
           </Tooltip>
           <Tooltip title="设置">
-            <Button icon={<SettingTwoTone />} onClick={() => setOpenResponsive(true)} />
+            <Button
+              icon={<SettingTwoTone />}
+              onClick={() => setOpenResponsive(true)}
+            />
           </Tooltip>
         </div>
       </Header>
-
-      <Content style={{ position: "relative", overflow: "hidden" }}>
-        <div ref={viewerRef} style={{ width: "100%", height: "100%" }} />
-      </Content>
+      {fileType === 'epub' && (
+          <Content style={{ position: "relative", overflow: "hidden" }}>
+            <div ref={viewerRef} style={{ width: "100%", height: "100%" }} />
+          </Content>
+        )}
+      {fileType === "pdf" && (
+          <Content>
+            <PdfRender></PdfRender>
+          </Content>
+        )}
 
       <Drawer
         title="目录"
@@ -381,16 +415,18 @@ const BookReader = ({ book, onClose }) => {
         onOk={() => setOpenResponsive(false)}
         onCancel={() => setOpenResponsive(false)}
         width={{
-          xs: '90%',
-          sm: '80%',
-          md: '70%',
-          lg: '60%',
-          xl: '50%',
-          xxl: '40%',
+          xs: "90%",
+          sm: "80%",
+          md: "70%",
+          lg: "60%",
+          xl: "50%",
+          xxl: "40%",
         }}
       >
         <Row>
-          <span style={{ fontSize: '14px', marginRight: '10px' }}>阅读模式</span>
+          <span style={{ fontSize: "14px", marginRight: "10px" }}>
+            阅读模式
+          </span>
           <Tooltip title="阅读模式">
             <Select
               defaultValue="平滑"
@@ -428,21 +464,21 @@ const BookReader = ({ book, onClose }) => {
           </Tooltip>
         </Row>
         <Row>
-          <span style={{ fontSize: '14px', marginRight: '10px' }}>字体</span>
+          <span style={{ fontSize: "14px", marginRight: "10px" }}>字体</span>
           <Tooltip title="阅读模式">
             <Select
               defaultValue="SimSun"
               onChange={onChangeFontFamily}
               style={{ width: 150 }}
               options={[
-                { label: '微软雅黑', value: 'Microsoft YaHei' },
-                { label: '宋体', value: 'SimSun' },
-                { label: '黑体', value: 'SimHei' },
-                { label: '楷体', value: 'KaiTi' },
-                { label: '华文行楷', value: '华文行楷' },
-                { label: '仿宋', value: 'FangSong' },
-                { label: '幼圆', value: 'YouYuan' },
-                { label: '隶书', value: 'LiSu' },
+                { label: "微软雅黑", value: "Microsoft YaHei" },
+                { label: "宋体", value: "SimSun" },
+                { label: "黑体", value: "SimHei" },
+                { label: "楷体", value: "KaiTi" },
+                { label: "华文行楷", value: "华文行楷" },
+                { label: "仿宋", value: "FangSong" },
+                { label: "幼圆", value: "YouYuan" },
+                { label: "隶书", value: "LiSu" },
               ]}
             />
           </Tooltip>
@@ -453,7 +489,7 @@ const BookReader = ({ book, onClose }) => {
               min={12}
               max={50}
               onChange={onChangeFontSize}
-              value={typeof fontSize === 'number' ? fontSize : 12}
+              value={typeof fontSize === "number" ? fontSize : 12}
             />
           </Col>
           <Col span={4}>
@@ -461,18 +497,15 @@ const BookReader = ({ book, onClose }) => {
               min={12}
               max={50}
               style={{
-                margin: '0 16px',
+                margin: "0 16px",
               }}
               value={fontSize}
               onChange={onChangeFontSize}
             />
           </Col>
         </Row>
-        <Row>
-          
-        </Row>
+        <Row></Row>
       </Modal>
-
     </Layout>
   );
 };

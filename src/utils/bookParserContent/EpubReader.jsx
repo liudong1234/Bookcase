@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import Epub from "epubjs";
 
-const useEpubParser = (book, readingMode, managerMode, theme, fontSize, fontFamily, viewerRef) => {
+const useEpubReader = (book, readingMode, managerMode, theme, fontSize, fontFamily, viewerRef) => {
   const [toc, setToc] = useState([]);
   const [currentCfi, setCurrentCfi] = useState("");
   const [rendition, setRendition] = useState(null);
@@ -109,4 +109,4 @@ const useEpubParser = (book, readingMode, managerMode, theme, fontSize, fontFami
   };
 };
 
-export default useEpubParser;
+export default useEpubReader;
