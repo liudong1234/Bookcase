@@ -142,7 +142,7 @@ const Bookshelf = ({ bookfile, theme, bookshelfSettings }) => {
 
       try {
         // 检查文件类型是否支持
-        if (!ParserFactory.isSupported(bookfile.type)) {
+        if (!ParserFactory.isSupported(bookfile)) {
           message.error('不支持的文件类型');
           return;
         }
@@ -152,7 +152,6 @@ const Bookshelf = ({ bookfile, theme, bookshelfSettings }) => {
           b.name === bookfile.name &&
           b.size === bookfile.size
         );
-        console.log('book', bookfile);
 
         if (isBookExists) {
           message.info('书籍已存在');
@@ -161,13 +160,13 @@ const Bookshelf = ({ bookfile, theme, bookshelfSettings }) => {
 
         // 生成书籍唯一ID
         const bookId = Date.now().toString();
-        const parser = ParserFactory.getParser(bookfile.type);
+        const parser = ParserFactory.getParser(bookfile.type, bookfile.name);
 
         // 获取书籍元数据
         const metadata = await parser.getMetadata(bookfile);
-        
         // 获取并存储封面
         const coverBlob = await parser.getCover(bookfile);
+        console.log("metadata", coverBlob);
         if (coverBlob) {
           await dbOperations.saveCover(bookId, coverBlob);
           setBookCovers(prev => ({
