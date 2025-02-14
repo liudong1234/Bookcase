@@ -159,6 +159,7 @@ const Bookshelf = ({ bookfile, theme, bookshelfSettings }) => {
         }
 
         // 生成书籍唯一ID
+        debugger;
         const bookId = Date.now().toString();
         const parser = ParserFactory.getParser(bookfile.type, bookfile.name);
 

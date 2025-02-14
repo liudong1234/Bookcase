@@ -54,7 +54,7 @@ const App = () => {
             <div>
               <input
                 type="file"
-                accept=".epub, .pdf, .md, .txt"
+                accept=".epub, .pdf, .md, .txt, .mobi"
                 style={{ display: "none" }}
                 id="book-upload"
                 onChange={handleFileUpload}
