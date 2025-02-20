@@ -166,7 +166,6 @@ const Bookshelf = ({ bookfile, theme, bookshelfSettings }) => {
         const metadata = await parser.getMetadata(bookfile);
         // 获取并存储封面
         const coverBlob = await parser.getCover(bookfile);
-        console.log("metadata", coverBlob);
         if (coverBlob) {
           await dbOperations.saveCover(bookId, coverBlob);
           setBookCovers(prev => ({
@@ -204,7 +203,6 @@ const Bookshelf = ({ bookfile, theme, bookshelfSettings }) => {
     try {
       await dbOperations.deleteBook(bookId);
       await dbOperations.deleteCover(bookId);
-      console.log(bookId);
       setBooks(prev => prev.filter(b => b.id !== bookId));
       setBookCovers(prev => {
         const newCovers = { ...prev };

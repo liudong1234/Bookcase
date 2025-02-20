@@ -2,8 +2,8 @@ import { Button, Tooltip } from "antd";
 
 import { 
   MenuOutlined,
-  LeftOutlined,
-  RightOutlined,
+  ArrowLeftOutlined,
+  ArrowRightOutlined,
   FullscreenOutlined,
   FullscreenExitOutlined,
   SettingTwoTone,
@@ -14,22 +14,24 @@ const ReaderToolbar = ({
   navigationHandlers, 
   onSettingsClick, 
   onTocClick, 
-  onThemeToggle 
+  onThemeToggle,
+  children,
 }) => {
   return (
     <div className="reader-tools" style={{ display: "flex", gap: "8px" }}>
       <Tooltip title="上一页">
         <Button 
-          icon={<LeftOutlined />} 
+          icon={<ArrowLeftOutlined />} 
           onClick={navigationHandlers.handlePrevPage} 
         />
       </Tooltip>
       <Tooltip title="下一页">
         <Button 
-          icon={<RightOutlined />} 
+          icon={<ArrowRightOutlined />} 
           onClick={navigationHandlers.handleNextPage} 
-        />
+          />
       </Tooltip>
+      {children}
       <Tooltip title="切换主题">
         <Button onClick={onThemeToggle}>
           {readerTheme === "light" ? "🌙" : "☀️"}

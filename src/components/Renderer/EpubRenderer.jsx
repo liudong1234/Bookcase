@@ -41,8 +41,6 @@ const EpubRenderer = ({
   const updateTheme = (value) => {
     setReaderTheme(value);
   }
-
-
   //设置参数
   const [readerSettings, setReaderSettings] = useState({
     fontSize: 16,
@@ -179,8 +177,6 @@ const EpubRenderer = ({
       readerState.rendition?.next();
     },
     handleTocSelect: (location) => {
-      console.log("location", readerState.rendition);
-
       readerState.rendition?.display(location);
       updateUiState('openToc', false);
     },
