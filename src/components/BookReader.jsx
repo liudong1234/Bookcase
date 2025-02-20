@@ -42,14 +42,14 @@ const BookReader = ({ book, onClose }) => {
     readingMode: "paginated",
     managerMode: "default",
   });
-
+  
   // UI state
   const [uiState, setUiState] = useState({
     isFullscreen: false,
     openSettings: false,
     showToc: false,
   });
-
+  
   // Reader state
   const [readerState, setReaderState] = useState({
     currentLocation: null,
@@ -58,8 +58,6 @@ const BookReader = ({ book, onClose }) => {
   });
 
   const viewerRef = useRef(null);
-  // State to handle header visibility
-  const [headerVisible, setHeaderVisible] = useState(false);
 
   // Unified settings update handler
   const updateSettings = (key, value) => {
@@ -86,11 +84,13 @@ const BookReader = ({ book, onClose }) => {
       readerState.rendition?.next();
     },
     handleTocSelect: (location) => {
+      console.log("location", readerState.rendition);
+
       readerState.rendition?.display(location);
       updateUiState('showToc', false);
     },
     onTocClose: () => {
-      updateUiState('showToc', false);
+     updateUiState('showToc', false);
     }
   };
 
@@ -114,11 +114,11 @@ const BookReader = ({ book, onClose }) => {
       managerMode = "continuous";
       value = value === "successive" ? "scrolled" : "paginated";
     }
-
+    
     setReaderSettings(prev => ({
       ...prev,
       readingMode: value,
-      managerMode: managerMode
+      managerMode:managerMode
     }));
   };
 
@@ -182,7 +182,7 @@ const BookReader = ({ book, onClose }) => {
       </Header>
 
       <Content style={{ position: "relative", overflow: "hidden" }}>
-        {getRenderer()}
+        { getRenderer() }
       </Content>
 
       <SettingsModal
@@ -197,26 +197,26 @@ const BookReader = ({ book, onClose }) => {
 };
 
 // Separate components for better organization
-const ReaderToolbar = ({
-  settings,
-  uiState,
-  navigationHandlers,
-  onSettingsClick,
-  onTocClick,
-  onThemeToggle
+const ReaderToolbar = ({ 
+  settings, 
+  uiState, 
+  navigationHandlers, 
+  onSettingsClick, 
+  onTocClick, 
+  onThemeToggle 
 }) => {
   return (
     <div className="reader-tools" style={{ display: "flex", gap: "8px" }}>
       <Tooltip title="上一页">
-        <Button
-          icon={<LeftOutlined />}
-          onClick={navigationHandlers.handlePrevPage}
+        <Button 
+          icon={<LeftOutlined />} 
+          onClick={navigationHandlers.handlePrevPage} 
         />
       </Tooltip>
       <Tooltip title="下一页">
-        <Button
-          icon={<RightOutlined />}
-          onClick={navigationHandlers.handleNextPage}
+        <Button 
+          icon={<RightOutlined />} 
+          onClick={navigationHandlers.handleNextPage} 
         />
       </Tooltip>
       <Tooltip title="切换主题">
@@ -229,8 +229,8 @@ const ReaderToolbar = ({
       </Tooltip>
       <Tooltip title="全屏">
         <Button
-          icon={document.fullscreenElement ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-          onClick={() => { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }}
+          icon={ document.fullscreenElement ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+          onClick={() => { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();} }
         />
       </Tooltip>
       <Tooltip title="设置">

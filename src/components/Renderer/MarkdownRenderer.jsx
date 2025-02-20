@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Drawer, message } from "antd";
+import { Drawer } from "antd";
 import ReactMarkdown from "react-markdown";
 import { CiCircleTwoTone } from "@ant-design/icons";
 import remarkGfm from 'remark-gfm';
@@ -19,11 +19,11 @@ const MarkdownRenderer = ({
   const [expandedItems, setExpandedItems] = useState({});
   const [markdownContent, setMarkdownContent] = useState(''); // Changed to string
   const markdownRef = useRef(null);
-  const [chapters, setChapters] = useState([]);
-
+  
   const generateToc = (text) => {
+    const headers = [];
     const usedIds = new Set(); // 用于追踪已使用的ID
-    const headers = []
+  
     // 生成唯一ID的函数
     const generateUniqueId = (base) => {
       let id = base;
@@ -58,7 +58,7 @@ const MarkdownRenderer = ({
   
       headers.push(header);
     }
-    setChapters(headers);
+    eventHandlers.onTocChange(headers);
   };
   
   useEffect(() => {
@@ -68,6 +68,7 @@ const MarkdownRenderer = ({
       markdownRef.current.style.backgroundColor = settings.theme === "light" ? "#fff" : "#1f1f1f";
       markdownRef.current.style.color = settings.theme === "light" ? "#000" : "#fff";
     }
+    eventHandlers.onRenditionReady(rendition);
   }, [settings]);
 
   useEffect(() => {
@@ -84,58 +85,50 @@ const MarkdownRenderer = ({
       generateToc(book);
     }
     eventHandlers.onRenditionReady(rendition);
-  }, [book, uiState.showToc]);
+  }, [book]);
 
-  useEffect(() => {
-    // 当 chapters 变化时通知父组件
-    eventHandlers.onTocChange(chapters);
-  }, [chapters]); // 添加 chapters 作为依赖
-  
-  const scrollToHeader = (headerText, level) => {
+  const scrollToHeader = (headerId) => {
+
     if (!viewerRef.current) return;
-  
-    // Find all headers at the specified level (h1, h2, h3, etc.)
-    const headers = viewerRef.current.querySelectorAll(`h${level}`);
-  
-    // Find the header with the matching text content
-    const headerElement = Array.from(headers).find((header) =>
-      header.textContent.trim() === headerText
-    );
-  
+    const headerElement = viewerRef.current.querySelector(`#${headerId}`);
+    console.log("执行", viewerRef.current);
     if (headerElement) {
+      // Get the viewer's scrollTop position
+      const viewerScrollTop = viewerRef.current.scrollTop;
+      // Get the header's position relative to the viewer
       const headerTop = headerElement.offsetTop;
-  
+
       viewerRef.current.scrollTo({
         top: headerTop,
-        behavior: 'smooth',
+        behavior: 'smooth'
       });
-  
+
       // Update current chapter
-      setCurrentChapter(headerText); // You can use text or another identifier here
+      setCurrentChapter(headerId);
     }
   };
   // Rendition object for page navigation
   const rendition = {
     next: () => {
-      // const currentIndex = chapters.findIndex(item => item.label === currentChapter);
-      message.info('markdown没有翻页功能');
-      // if (currentIndex < chapters.length - 1) {
-      //   const nextChapter = chapters[currentIndex + 1];
-      //   scrollToHeader(nextChapter.label, nextChapter.level);
-      // }
+      const currentIndex = readerState.toc.findIndex(item => item.index === currentChapter);
+      if (currentIndex < readerState.toc.length - 1) {
+        const nextChapter = readerState.toc[currentIndex + 1];
+        scrollToHeader(nextChapter.index);
+      }
     },
     prev: () => {
-      message.info('markdown没有翻页功能');
-      // const currentIndex = chapters.findIndex(item => item.label === currentChapter);
-      // if (currentIndex > 0) {
-      //   const prevChapter = chapters[currentIndex - 1];
-      //   scrollToHeader(prevChapter.label, prevChapter.level);
-      // }
+      const currentIndex = readerState.toc.findIndex(item => item.index === currentChapter);
+      if (currentIndex > 0) {
+        const prevChapter = readerState.toc[currentIndex - 1];
+        scrollToHeader(prevChapter.index);
+      }
     },
     display: (index) => {
       if (index !== '') {
-        const targetChapter = chapters[index]; // 使用本地 chapters 状态
-        scrollToHeader(targetChapter.label, targetChapter.level);
+        console.log("滚动到", index);
+        const targetChapter = readerState.toc[index];
+        console.log(targetChapter);
+        scrollToHeader(targetChapter.id);
       }
     },
     current: () => currentChapter,
@@ -358,7 +351,6 @@ const MarkdownRenderer = ({
         }));
       } else {
         // 跳转到对应位置
-        eventHandlers.onRenditionReady(rendition);
         handlers.handleTocSelect(item.index);
       }
     };

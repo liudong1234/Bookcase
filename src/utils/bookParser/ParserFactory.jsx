@@ -1,7 +1,6 @@
 import EpubParser from "./EpubParser";
 import MarkdownParser from "./MarkdownParser";
 import PdfParser from "./PdfParser";
-import MobiParser from "./MobiParser";
 
 class ParserFactory {
   static parsers = {
@@ -10,7 +9,6 @@ class ParserFactory {
     "application/md": new MarkdownParser(),
     "application/markdown": new MarkdownParser(),
     "application/txt": new MarkdownParser(),
-    "application/mobi": new MobiParser(),
   };
 
   static getParser(mimeType, bookName) {
@@ -26,7 +24,6 @@ class ParserFactory {
   }
 
   static isSupported(file) {
-    debugger;
     let mimeType = file.type;
     if (mimeType === 'text/plain' || mimeType === '') {
       const format = file.name.split('.').pop().toLowerCase()
