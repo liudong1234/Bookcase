@@ -1,29 +1,96 @@
 import { useState, useEffect, useRef } from "react";
-import { Drawer } from "antd";
+import { Drawer, Button } from "antd";
+import { Content, Header } from "antd/es/layout/layout";
+import { ArrowLeftOutlined } from "@ant-design/icons";
 import ReactMarkdown from "react-markdown";
-import { CiCircleTwoTone } from "@ant-design/icons";
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 
+import MenuTocItem from "./MenuTocItem";
+import { getItemKey } from "./MenuTocItem";
+import ReaderToolbar from "./ReaderToolBar";
+import SettingsModal from "./SettingsModal";
 const MarkdownRenderer = ({
   book,
-  settings,
-  handlers,
-  eventHandlers,
-  uiState,
-  readerState,
+  onLeftCloseHandler,
   viewerRef,
 }) => {
   // const [toc, setToc] = useState([]);
   const [currentChapter, setCurrentChapter] = useState('');
-  const [expandedItems, setExpandedItems] = useState({});
   const [markdownContent, setMarkdownContent] = useState(''); // Changed to string
-  const markdownRef = useRef(null);
+  const [readerTheme, setReaderTheme] = useState('light');
+  const updateTheme = (value) => {
+    setReaderTheme(value);
+  }
+  const [readerState, setReaderState] = useState({
+    currentLocation: null,
+    toc: [],
+    rendition: null,
+  });
   
+  const eventHandlers = {
+    onRenditionReady: (rendition) => {
+      setReaderState(prev => ({ ...prev, rendition }));
+    },
+    onLocationChange: (location) => {
+      setReaderState(prev => ({ ...prev, currentLocation: location }));
+    },
+    onTocChange: (toc) => {
+      setReaderState(prev => ({ ...prev, toc }));
+    },
+    onLeftClose: onLeftCloseHandler,
+  };
+  const markdownRef = useRef(null);
+
+  //设置参数
+  const [readerSettings, setReaderSettings] = useState({
+    fontSize: 16,
+    fontFamily: "SimSun",
+    readingMode: "paginated",
+    managerMode: "default",
+    //
+  })
+  const updateSettings = (key, value) => {
+    setReaderSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const [uiState, setUiState] = useState({
+    isFullscreen: false, // 全屏
+    openSettings: false, // 页面设置菜单
+    openToc: false, //目录的显示与否
+  })
+  const updateUiState = (key, value) => {
+    setUiState(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const navigationHandlers = {
+    handlePrevPage: () => {
+      readerState.rendition?.prev();
+    },
+    handleNextPage: () => {
+      readerState.rendition?.next();
+    },
+    handleTocSelect: (location) => {
+      console.log("location", readerState.rendition);
+
+      readerState.rendition?.display(location);
+      updateUiState('openToc', false);
+    },
+    onTocClose: () => {
+      updateUiState('openToc', false);
+    }
+  };
+
   const generateToc = (text) => {
     const headers = [];
     const usedIds = new Set(); // 用于追踪已使用的ID
-  
+
     // 生成唯一ID的函数
     const generateUniqueId = (base) => {
       let id = base;
@@ -36,40 +103,40 @@ const MarkdownRenderer = ({
       usedIds.add(id);
       return id;
     };
-  
+
     // 更简单的正则表达式，主要匹配#号和标题内容
     const regex = /^(#{1,6})\s+(.+?)$/gm;
     let match;
-  
+
     while ((match = regex.exec(text)) !== null) {
       const level = match[1].length;
       const label = match[2].trim();
-      
+
       // 为每个标题生成一个基于序号的唯一ID
       const baseId = `heading-${headers.length + 1}`;
       const id = generateUniqueId(baseId);
-  
+
       const header = {
         level,
         label,
         id,
         index: headers.length
       };
-  
+
       headers.push(header);
     }
     eventHandlers.onTocChange(headers);
   };
-  
+
   useEffect(() => {
     if (markdownRef.current) {
-      markdownRef.current.style.fontSize = `${settings.fontSize}px`;
-      markdownRef.current.style.fontFamily = settings.fontFamily;
-      markdownRef.current.style.backgroundColor = settings.theme === "light" ? "#fff" : "#1f1f1f";
-      markdownRef.current.style.color = settings.theme === "light" ? "#000" : "#fff";
+      markdownRef.current.style.fontSize = `${readerSettings.fontSize}px`;
+      markdownRef.current.style.fontFamily = readerSettings.fontFamily;
+      markdownRef.current.style.backgroundColor = readerTheme === "light" ? "#fff" : "#1f1f1f";
+      markdownRef.current.style.color = readerTheme === "light" ? "#000" : "#fff";
     }
     eventHandlers.onRenditionReady(rendition);
-  }, [settings]);
+  }, [readerSettings]);
 
   useEffect(() => {
     if (book instanceof File) {
@@ -146,7 +213,7 @@ const MarkdownRenderer = ({
           marginTop: '24px',
           marginBottom: '16px',
           fontSize: '2em',
-          color: settings.theme === "light" ? "#24292e" : "#ffffff"
+          color: readerTheme === "light" ? "#24292e" : "#ffffff"
         }}
         {...props}
       />
@@ -160,7 +227,7 @@ const MarkdownRenderer = ({
           marginTop: '24px',
           marginBottom: '16px',
           fontSize: '1.5em',
-          color: settings.theme === "light" ? "#24292e" : "#ffffff"
+          color: readerTheme === "light" ? "#24292e" : "#ffffff"
         }}
         {...props}
       />
@@ -172,7 +239,7 @@ const MarkdownRenderer = ({
           marginTop: '24px',
           marginBottom: '16px',
           fontSize: '1.25em',
-          color: settings.theme === "light" ? "#24292e" : "#ffffff"
+          color: readerTheme === "light" ? "#24292e" : "#ffffff"
         }}
         {...props}
       />
@@ -236,7 +303,7 @@ const MarkdownRenderer = ({
             padding: '0.2em 0.4em',
             margin: 0,
             fontSize: '85%',
-            backgroundColor: settings.theme === "light" ? '#f6f8fa' : '#2f3542',
+            backgroundColor: readerTheme === "light" ? '#f6f8fa' : '#2f3542',
             borderRadius: '3px'
           }}
           {...props}
@@ -249,7 +316,7 @@ const MarkdownRenderer = ({
             overflow: 'auto',
             fontSize: '85%',
             lineHeight: '1.45',
-            backgroundColor: settings.theme === "light" ? '#f6f8fa' : '#2f3542',
+            backgroundColor: readerTheme === "light" ? '#f6f8fa' : '#2f3542',
             borderRadius: '3px'
           }}
           {...props}
@@ -330,120 +397,62 @@ const MarkdownRenderer = ({
     ),
   };
 
-  // TOC related utilities
-  const getItemKey = (item, parentPath = "") => {
-    return `${parentPath}-${item.id || item.label}`;
-  };
-  const TocItem = ({ item, level = 0, parentPath = "" }) => {
-    const itemKey = getItemKey(item, parentPath);
-    const hasSubItems = item.subitems?.length > 0;
-    const isExpanded = expandedItems[itemKey] || false;
-    const isCurrentChapter = item.index === currentChapter;
-
-    // 处理目录项点击（支持展开/折叠和跳转）
-    const handleItemClick = (e) => {
-      e.stopPropagation();
-      if (hasSubItems) {
-        // 切换展开状态
-        setExpandedItems((prev) => ({
-          ...prev,
-          [itemKey]: !isExpanded,
-        }));
-      } else {
-        // 跳转到对应位置
-        handlers.handleTocSelect(item.index);
-      }
-    };
-
-    // 处理子项箭头图标的点击（仅切换展开状态）
-    const handleArrowClick = (e) => {
-      e.stopPropagation();
-      setExpandedItems((prev) => ({
-        ...prev,
-        [itemKey]: !isExpanded,
-      }));
-    };
-
-    return (
-      <div className="toc-node">
-        <div
-          className="toc-item"
-          data-current-header={isCurrentChapter ? "true" : undefined}
-          style={{
-            padding: "8px 16px",
-            paddingLeft: `${16 + level * 20}px`,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            background: isCurrentChapter ? "#e6f4ff" : "transparent",
-          }}
-          onClick={handleItemClick}
-        >
-          {item.level > 1 && (
-            <span
-              style={{
-                marginRight: 8,
-                transform: isExpanded ? "rotate(90deg)" : "none",
-                transition: "transform 0.2s",
-              }}
-              onClick={handleArrowClick}
-            >
-              <CiCircleTwoTone />
-            </span>
-          )}
-
-          <span
-            style={{
-              flex: 1,
-              color: isCurrentChapter ? "#1890ff" : settings.theme === "light" ? "#000" : "#fff",
-              fontSize: 14 - level * 0.5,
-              fontWeight: isCurrentChapter ? 500 : 400,
-            }}
-          >
-            {item.label}
-          </span>
-        </div>
-
-        {item.level > 1 && isExpanded && (
-          <div className="toc-children">
-            {readerState.toc
-              .filter(subitem => subitem.level === item.level + 1)
-              .map((subitem, index) => (
-                <TocItem
-                  key={index}
-                  item={subitem}
-                  level={level + 1}
-                  parentPath={itemKey}
-                />
-              ))
-            }
-          </div>
-        )}
-      </div>
-    );
-  };
+  const handleTocClose = () => {
+    setUiState('openToc', false);
+  }
 
   return (
     <>
-      <div ref={viewerRef} style={{ width: "100%", height: "100%", padding: "16px", overflowY: "auto" }}>
-        <div ref={markdownRef}>
-          <ReactMarkdown
-            children={markdownContent}
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeRaw]}
-            components={markdownComponents}
-          />
-        </div>
-      </div>
+      <Header
+        className="reader-header"
+        style={{
+          background: readerTheme === "light" ? "#fff" : "#1f1f1f",
+          borderBottom: "1px solid #e8e8e8",
+        }}
+      >
+        <Button
+          icon={<ArrowLeftOutlined />}
+          onClick={eventHandlers.onLeftClose}
+          style={{ marginRight: 16 }}
+        />
+        <h3
+          style={{
+            margin: 0,
+            flex: 1,
+            color: readerTheme === "light" ? "#000" : "#fff",
+          }}
+        >
+          {book?.name}
+        </h3>
+        <ReaderToolbar
+          readerTheme={readerTheme}
+          navigationHandlers={navigationHandlers}
+          onSettingsClick={() => updateUiState('openSettings', true)}
+          onTocClick={() => updateUiState('openToc', true)}
+          onThemeToggle={() => updateTheme(readerTheme === 'light' ? 'dark' : 'light')}
+        />
+      </Header>
 
+      <Content style={{ position: "relative", overflow: "hidden" }}>
+        <div ref={viewerRef} style={{ width: "100%", height: "100%", padding: "16px", overflowY: "auto" }}>
+          <div ref={markdownRef}>
+            <ReactMarkdown
+              children={markdownContent}
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+              components={markdownComponents}
+            />
+          </div>
+        </div>
+      </Content>
       <Drawer
         title="目录"
         placement="left"
-        open={uiState.showToc}
-        onClose={() => handlers.onTocClose?.()}
+        open={uiState.openToc}
+        onClose={() => handleTocClose()}
         width={300}
         style={{
-          background: settings.theme === "light" ? "#fff" : "#1f1f1f",
+          background: readerTheme === "light" ? "#fff" : "#1f1f1f",
         }}
         className="my-toc-drawer"
       >
@@ -452,14 +461,28 @@ const MarkdownRenderer = ({
           style={{
             height: "100%",
             overflow: "auto",
-            background: settings.theme === "light" ? "#fff" : "#1f1f1f",
+            background: readerTheme === "light" ? "#fff" : "#1f1f1f",
           }}
         >
           {readerState.toc.map((item, index) => (
-            <TocItem key={index} item={item} level={item.level} />
+            <MenuTocItem
+              key={getItemKey(item)}
+              readerTheme={readerTheme}
+              item={item}
+              handlers={navigationHandlers}
+              currentChapter={currentChapter}
+              level={item.level}
+            />
           ))}
         </div>
       </Drawer>
+      <SettingsModal
+        readerTheme={readerTheme}
+        open={uiState.openSettings}
+        settings={readerSettings}
+        onSettingChange={updateSettings}
+        onClose={() => updateUiState('openSettings', false)}
+      />
     </>
   );
 };
