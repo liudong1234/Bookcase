@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Drawer, Button } from "antd";
 import { Content, Header } from "antd/es/layout/layout";
 import Epub from "epubjs";
+import { Header, Content } from "antd/es/layout/layout";
 
 import { ArrowLeftOutlined } from "@ant-design/icons";
 
@@ -70,6 +71,79 @@ const EpubRenderer = ({
 
   const bookRef = useRef(null);
 
+  const [settings, setReaderSettings] = useState({
+    fontSize: 16,
+    fontFamily: "SimSun",
+    theme: "light",
+    readingMode: "paginated",
+    managerMode: "default",
+  });
+
+  const [readerState, setReaderState] = useState({
+    currentLocation: null,
+    toc: [],
+    rendition: null,
+  });
+
+  const updateSettings = (key, value) => {
+    setReaderSettings((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const updateUiState = (key, value) => {
+    setUiState((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  // Navigation handlers
+  const navigationHandlers = {
+    handlePrevPage: () => {
+      readerState.rendition?.prev();
+    },
+    handleNextPage: () => {
+      readerState.rendition?.next();
+    },
+    handleTocSelect: (location) => {
+      readerState.rendition?.display(location);
+      updateUiState("showToc", false);
+    },
+    onTocClose: () => {
+      updateUiState("showToc", false);
+    },
+  };
+
+  // Reader event handlers
+  const readerEventHandlers = {
+    onRenditionReady: (rendition) => {
+      setReaderState((prev) => ({ ...prev, rendition }));
+    },
+    onLocationChange: (location) => {
+      setReaderState((prev) => ({ ...prev, currentLocation: location }));
+    },
+    onTocChange: (toc) => {
+      setReaderState((prev) => ({ ...prev, toc }));
+    },
+  };
+
+  // Reading mode handler
+  const handleModeChange = (value) => {
+    let managerMode = "default";
+    if (["successive", "simulation"].includes(value)) {
+      managerMode = "continuous";
+      value = value === "successive" ? "scrolled" : "paginated";
+    }
+
+    setReaderSettings((prev) => ({
+      ...prev,
+      readingMode: value,
+      managerMode: managerMode,
+    }));
+  };
+
   useEffect(() => {
     const initBook = async () => {
       try {
@@ -87,11 +161,11 @@ const EpubRenderer = ({
         });
 
         // Notify parent about rendition
-        eventHandlers.onRenditionReady(rendition);
+        readerEventHandlers.onRenditionReady(rendition);
 
         // Load and set TOC
         const navigation = await bookRef.current.loaded.navigation;
-        eventHandlers.onTocChange(navigation.toc);
+        readerEventHandlers.onTocChange(navigation.toc);
 
         // Restore reading progress
         const savedCfi = localStorage.getItem(`book-progress-${book.name}`);
@@ -146,7 +220,7 @@ const EpubRenderer = ({
     }
 
     // Notify parent
-    eventHandlers.onLocationChange(location);
+    readerEventHandlers.onLocationChange(location);
   };
 
   // Reading mode handler
@@ -262,7 +336,147 @@ const EpubRenderer = ({
       />
 
     </>
+  );
+};
 
+const ReaderToolbar = ({
+  settings,
+  uiState,
+  navigationHandlers,
+  onSettingsClick,
+  onTocClick,
+  onThemeToggle,
+}) => {
+  return (
+    <div className="reader-tools" style={{ display: "flex", gap: "8px" }}>
+      <Tooltip title="上一页">
+        <Button
+          icon={<LeftOutlined />}
+          onClick={navigationHandlers.handlePrevPage}
+        />
+      </Tooltip>
+      <Tooltip title="下一页">
+        <Button
+          icon={<RightOutlined />}
+          onClick={navigationHandlers.handleNextPage}
+        />
+      </Tooltip>
+      <Tooltip title="切换主题">
+        <Button onClick={onThemeToggle}>
+          {settings.theme === "light" ? "🌙" : "☀️"}
+        </Button>
+      </Tooltip>
+      <Tooltip title="目录">
+        <Button icon={<MenuOutlined />} onClick={onTocClick} />
+      </Tooltip>
+      <Tooltip title="全屏">
+        <Button
+          icon={
+            document.fullscreenElement ? (
+              <FullscreenExitOutlined />
+            ) : (
+              <FullscreenOutlined />
+            )
+          }
+          onClick={() => {
+            document.fullscreenElement
+              ? document.exitFullscreen()
+              : document.documentElement.requestFullscreen();
+          }}
+        />
+      </Tooltip>
+      <Tooltip title="设置">
+        <Button icon={<SettingTwoTone />} onClick={onSettingsClick} />
+      </Tooltip>
+    </div>
+  );
+};
+
+const SettingsModal = ({
+  open,
+  settings,
+  onSettingChange,
+  onModeChange,
+  onClose,
+}) => {
+  return (
+    <Modal
+      title="页面设置"
+      centered
+      open={open}
+      onOk={onClose}
+      onCancel={onClose}
+      width={{
+        xs: "90%",
+        sm: "80%",
+        md: "70%",
+        lg: "60%",
+        xl: "50%",
+        xxl: "40%",
+      }}
+    >
+      <Row>
+        <span style={{ fontSize: "14px", marginRight: "10px" }}>阅读模式</span>
+        <Select
+          defaultValue="平滑"
+          onChange={onModeChange}
+          style={{ width: 120 }}
+          options={[
+            {
+              label: <span>水平阅读</span>,
+              options: [
+                { label: <span>平滑</span>, value: "paginated" },
+                { label: <span>仿真</span>, value: "simulation" },
+              ],
+            },
+            {
+              label: <span>垂直阅读</span>,
+              options: [
+                { label: <span>普通</span>, value: "scrolled" },
+                { label: <span>连续</span>, value: "successive" },
+              ],
+            },
+          ]}
+        />
+      </Row>
+      <Row>
+        <span style={{ fontSize: "14px", marginRight: "10px" }}>字体</span>
+        <Select
+          value={settings.fontFamily}
+          onChange={(value) => onSettingChange("fontFamily", value)}
+          style={{ width: 150 }}
+          options={[
+            { label: "微软雅黑", value: "Microsoft YaHei" },
+            { label: "宋体", value: "SimSun" },
+            { label: "黑体", value: "SimHei" },
+            { label: "楷体", value: "KaiTi" },
+            { label: "华文行楷", value: "华文行楷" },
+            { label: "仿宋", value: "FangSong" },
+            { label: "幼圆", value: "YouYuan" },
+            { label: "隶书", value: "LiSu" },
+          ]}
+        />
+      </Row>
+      <Row>
+        <Col span={12}>
+          <Slider
+            min={12}
+            max={50}
+            value={settings.fontSize}
+            onChange={(value) => onSettingChange("fontSize", value)}
+          />
+        </Col>
+        <Col span={4}>
+          <InputNumber
+            min={12}
+            max={50}
+            style={{ margin: "0 16px" }}
+            value={settings.fontSize}
+            onChange={(value) => onSettingChange("fontSize", value)}
+          />
+        </Col>
+      </Row>
+    </Modal>
   );
 };
 
