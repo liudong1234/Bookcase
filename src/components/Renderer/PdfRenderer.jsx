@@ -282,57 +282,60 @@ const PDFRenderer = ({
           <CustomToolbar />
         </ReaderToolbar>
       </Header>
-      <div ref={viewerRef} style={{ width: "100%", height: "100%" }}>
-        <Worker workerUrl="/pdf.worker.min.js">
-          {pdfUrl ? (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-              }}
-            >
-              <div style={{ flex: 1, overflow: "auto" }}>
-                <Viewer
-                  fileUrl={pdfUrl}
-                  plugins={[
-                    pageNavigationPluginInstance,
-                    zoomPluginInstance,
-                    scrollModePluginInstance,
-                    bookmarkPluginInstance,
-                  ]}
-                  defaultScale={SpecialZoomLevel.PageWidth}
-                  theme={themeStyles}
-                  onDocumentLoad={handleDocumentLoad}
-                  onPageChange={(e) => handlePageChange(e.currentPage)}
-                  onZoom={(e) => setScale(e.scale)}
-                  renderLoader={(percentages) => (
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <ProgressBar progress={Math.round(percentages)} />
-                    </div>
-                  )}
-                />
+      <Content style={{ position: "relative", overflow: "hidden" }}>
+      <div ref={viewerRef} style={{ width: "100%", height: "100%", padding: "16px", overflowY: "auto" }}>
+          <Worker workerUrl="/pdf.worker.min.js">
+            {pdfUrl ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "100%",
+                }}
+              >
+                <div style={{ flex: 1, overflow: "auto" }}>
+                  <Viewer
+                    fileUrl={pdfUrl}
+                    plugins={[
+                      pageNavigationPluginInstance,
+                      zoomPluginInstance,
+                      scrollModePluginInstance,
+                      bookmarkPluginInstance,
+                    ]}
+                    defaultScale={SpecialZoomLevel.PageWidth}
+                    theme={themeStyles}
+                    onDocumentLoad={handleDocumentLoad}
+                    onPageChange={(e) => handlePageChange(e.currentPage)}
+                    onZoom={(e) => setScale(e.scale)}
+                    renderLoader={(percentages) => (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <ProgressBar progress={Math.round(percentages)} />
+                      </div>
+                    )}
+                  />
+                </div>
               </div>
-            </div>
-          ) : (
-            <div>Loading PDF...</div>
-          )}
-        </Worker>
-      </div>
+            ) : (
+              <div>Loading PDF...</div>
+            )}
+          </Worker>
+        </div>
+      </Content>
       <Drawer
         title="目录"
         placement="left"
         open={uiState.openToc}
         onClose={() => handleTocClose()}
         width={300}
+        mask={'true'}
         styles={{
           body: {
             background: readerTheme === "light" ? "#fff" : "#1f1f1f",

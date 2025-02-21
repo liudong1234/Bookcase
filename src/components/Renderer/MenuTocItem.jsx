@@ -1,9 +1,6 @@
 
 import { useState } from "react";
 import { CiCircleTwoTone } from "@ant-design/icons";
-
-
-
   // TOC related utilities
   export const getItemKey = (item, parentPath = "") => {
     return `${parentPath}-${item.id || item.label}`;
@@ -39,7 +36,7 @@ import { CiCircleTwoTone } from "@ant-design/icons";
   };
 
 
-const MenuTocItem = ({readerTheme, item, level = 0, handlers, currentChapter, parentPath = "" }) => {
+const MenuTocItem = ({readerTheme, item, level = 0, tocSelectHandler, currentChapter, parentPath = "" }) => {
   const [expandedItems, setExpandedItems] = useState({});
 
   const itemKey = getItemKey(item, parentPath);
@@ -59,7 +56,7 @@ const MenuTocItem = ({readerTheme, item, level = 0, handlers, currentChapter, pa
       }));
     } else {
       // 跳转到对应位置
-      handlers.handleTocSelect(item.href);
+      tocSelectHandler(item);
     }
   };
 
@@ -135,7 +132,10 @@ const MenuTocItem = ({readerTheme, item, level = 0, handlers, currentChapter, pa
           {item.subitems.map((subitem, index) => (
             <MenuTocItem
               key={index}
+              readerTheme={readerTheme}
               item={subitem}
+              tocSelectHandler={tocSelectHandler}
+              currentChapter={currentChapter}
               level={level + 1}
               parentPath={itemKey}
             />

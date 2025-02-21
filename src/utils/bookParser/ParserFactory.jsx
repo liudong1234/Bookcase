@@ -24,6 +24,7 @@ class ParserFactory {
   }
 
   static isSupported(file) {
+    
     let mimeType = file.type;
     if (mimeType === 'text/plain' || mimeType === '') {
       const format = file.name.split('.').pop().toLowerCase()

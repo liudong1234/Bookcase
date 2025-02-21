@@ -41,7 +41,7 @@ const MarkdownRenderer = ({
     onLeftClose: onLeftCloseHandler,
   };
   const markdownRef = useRef(null);
-
+  
   //设置参数
   const [readerSettings, setReaderSettings] = useState({
     fontSize: 16,
@@ -56,7 +56,7 @@ const MarkdownRenderer = ({
       [key]: value
     }));
   };
-
+  
   const [uiState, setUiState] = useState({
     isFullscreen: false, // 全屏
     openSettings: false, // 页面设置菜单
@@ -68,7 +68,7 @@ const MarkdownRenderer = ({
       [key]: value
     }));
   };
-
+  
   const navigationHandlers = {
     handlePrevPage: () => {
       readerState.rendition?.prev();
@@ -77,55 +77,40 @@ const MarkdownRenderer = ({
       readerState.rendition?.next();
     },
     handleTocSelect: (location) => {
-      console.log("location", readerState.rendition);
-
-      readerState.rendition?.display(location);
+      readerState.rendition?.display(location.id);
       updateUiState('openToc', false);
     },
     onTocClose: () => {
       updateUiState('openToc', false);
     }
   };
-
+  
   const generateToc = (text) => {
     const headers = [];
-    const usedIds = new Set(); // 用于追踪已使用的ID
-
-    // 生成唯一ID的函数
-    const generateUniqueId = (base) => {
-      let id = base;
-      let counter = 1;
-      // 如果ID已存在，添加数字后缀
-      while (usedIds.has(id)) {
-        id = `${base}-${counter}`;
-        counter++;
-      }
-      usedIds.add(id);
-      return id;
+    const levelCounters = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    
+    const generateId = (level) => {
+      levelCounters[level]++;
+      return `heading-${level}-${levelCounters[level]}`;
     };
 
-    // 更简单的正则表达式，主要匹配#号和标题内容
     const regex = /^(#{1,6})\s+(.+?)$/gm;
     let match;
 
     while ((match = regex.exec(text)) !== null) {
       const level = match[1].length;
       const label = match[2].trim();
+      const id = generateId(level);
 
-      // 为每个标题生成一个基于序号的唯一ID
-      const baseId = `heading-${headers.length + 1}`;
-      const id = generateUniqueId(baseId);
-
-      const header = {
+      headers.push({
         level,
         label,
         id,
         index: headers.length
-      };
-
-      headers.push(header);
+      });
     }
-    eventHandlers.onTocChange(headers);
+
+    setReaderState(prev => ({ ...prev, toc: headers }));
   };
 
   useEffect(() => {
@@ -158,7 +143,6 @@ const MarkdownRenderer = ({
 
     if (!viewerRef.current) return;
     const headerElement = viewerRef.current.querySelector(`#${headerId}`);
-    console.log("执行", viewerRef.current);
     if (headerElement) {
       // Get the viewer's scrollTop position
       const viewerScrollTop = viewerRef.current.scrollTop;
@@ -192,10 +176,7 @@ const MarkdownRenderer = ({
     },
     display: (index) => {
       if (index !== '') {
-        console.log("滚动到", index);
-        const targetChapter = readerState.toc[index];
-        console.log(targetChapter);
-        scrollToHeader(targetChapter.id);
+        scrollToHeader(index);
       }
     },
     current: () => currentChapter,
@@ -204,9 +185,11 @@ const MarkdownRenderer = ({
   // Custom components for markdown rendering
   const markdownComponents = {
     // Headers with ID generation for TOC linking
+    
     h1: ({ node, ...props }) => (
       <h1
-        id={props.children.toString().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]/g, '')}
+        id={`${readerState.toc.find(item => 
+          item.level === 1 && item.label === props.children.toString()).id}`}
         style={{
           borderBottom: '1px solid #eaecef',
           paddingBottom: '.3em',
@@ -220,7 +203,8 @@ const MarkdownRenderer = ({
     ),
     h2: ({ node, ...props }) => (
       <h2
-        id={props.children.toString().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]/g, '')}
+        id={`${readerState.toc.find(item => 
+          item.level === 2 && item.label === props.children.toString()).id}`}
         style={{
           borderBottom: '1px solid #eaecef',
           paddingBottom: '.3em',
@@ -234,7 +218,8 @@ const MarkdownRenderer = ({
     ),
     h3: ({ node, ...props }) => (
       <h3
-        id={props.children.toString().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]/g, '')}
+        id={`${readerState.toc.find(item => 
+          item.level === 3 && item.label === props.children.toString()).id}`}
         style={{
           marginTop: '24px',
           marginBottom: '16px',
@@ -469,7 +454,7 @@ const MarkdownRenderer = ({
               key={getItemKey(item)}
               readerTheme={readerTheme}
               item={item}
-              handlers={navigationHandlers}
+              tocSelectHandler={navigationHandlers.handleTocSelect}
               currentChapter={currentChapter}
               level={item.level}
             />

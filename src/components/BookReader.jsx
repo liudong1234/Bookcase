@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { Layout } from "antd";
 import "./BookReader.css";
 import EpubRenderer from "./Renderer/EpubRenderer";

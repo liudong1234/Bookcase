@@ -107,7 +107,7 @@ const dbOperations = {
   }
 };
 
-const Bookshelf = ({ bookfile, theme, bookshelfSettings }) => {
+const Bookshelf = ({ bookfile, bookshelfSettings }) => {
   const { handleBookParsed, handleHideSiderBar, bookshelfStyle } = bookshelfSettings;
 
   const [currentBook, setCurrentBook] = useState(null);
@@ -138,7 +138,9 @@ const Bookshelf = ({ bookfile, theme, bookshelfSettings }) => {
   // 处理新书上传
   useEffect(() => {
     const handleNewBook = async () => {
-      if (!bookfile) return;
+      if (!bookfile)  {
+        return;
+      }
 
       try {
         // 检查文件类型是否支持
