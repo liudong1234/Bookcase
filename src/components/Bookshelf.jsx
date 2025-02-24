@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, message, Avatar, List, Button } from 'antd';
+import { Card, message, Avatar, List, Button, Empty } from 'antd';
 import Epub from 'epubjs';
 const { Meta } = Card;
 import { ParserFactory } from '../utils/bookParser/ParserFactory';
@@ -228,7 +228,7 @@ const Bookshelf = ({ bookfile, bookshelfSettings }) => {
       ) : (
         <div className="bookshelf-container">
           {books.length === 0 ? (
-            <p>暂无书籍</p>
+            <Empty description={'暂无书籍'}></Empty>
           ) : (
             <div>
               {

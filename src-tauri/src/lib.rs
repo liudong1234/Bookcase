@@ -1,118 +1,91 @@
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+
+mod db;
+
+use db::{Database, Book, BookMetadata};
 use serde::{Deserialize, Serialize};
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 use std::sync::Mutex;
 use tauri::{command, State};
-// 定义文件信息结构
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct FileInfo {
-    pub name: String,
-    pub content: String,
-    pub size: u64,
-    pub path: String,
+
+struct AppState {
+    db: Mutex<Database>,
 }
 
-// 定义应用状态
-pub struct AppState {
-    pub last_file: Mutex<Option<FileInfo>>,
-    pub last_file_path: Mutex<Option<String>>,
-}
-
-impl AppState {
-    pub fn new() -> Self {
-        Self {
-            last_file: Mutex::new(None),
-            last_file_path: Mutex::new(None),
-        }
-    }
-
-    pub fn upload_file_chunk(
-        &self,
-        chunk: Vec<u8>,
-        file_name: String,
-        chunk_index: usize,
-        total_chunks: usize,
-    ) -> Result<(), String> {
-        let dir_path = "./uploadBooks/tmp/"; // 建议改为绝对路径（见下文优化）
-        let file_path = format!("{}{}", dir_path, file_name);
-
-        // 创建目录（如果不存在）
-        fs::create_dir_all(dir_path).map_err(|e| format!("创建目录失败: {}", e))?;
-
-        // 打开文件（追加模式）
-        let mut file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&file_path)
-            .map_err(|e| format!("打开文件失败: {}", e))?;
-        file.write_all(&chunk).map_err(|e| e.to_string())?;
-
-        if chunk_index == total_chunks - 1 {
-            let source = Path::new(&file_path);
-
-            // 获取父目录
-            if let Some(parent) = source.parent() {
-                // 计算目标路径，即文件移动到父目录
-                let destination = parent
-                    .parent()
-                    .unwrap_or(parent)
-                    .join(source.file_name().unwrap());
-
-                // 执行移动操作
-                fs::rename(source, &destination).map_err(|e| format!("移动文件失败: {}", e))?;
-                // 保存最终路径
-                let final_path = destination.to_string_lossy().to_string();
-                *self.last_file_path.lock().unwrap() = Some(final_path);
-            }
-        }
-
-        Ok(())
-    }
-    pub fn get_last_file_path(&self) -> Option<String> {
-        self.last_file_path.lock().unwrap().clone()
-    }
-
-    pub fn get_last_file(&self) -> Option<FileInfo> {
-        self.last_file.lock().unwrap().clone()
-    }
-}
-
-// Tauri 命令处理函数
 #[command]
-async fn upload_file_chunk(
-    chunk: Vec<u8>,
-    file_name: String,
-    chunk_index: usize,
-    total_chunks: usize,
+async fn save_book (
     state: State<'_, AppState>,
+    mut book_data: Book,
+    cover_data: Option<Vec<u8>>,
 ) -> Result<(), String> {
-    state.upload_file_chunk(chunk, file_name, chunk_index, total_chunks)
+    let books_dir = Path::new("books");
+    fs::create_dir_all(books_dir).map_err(|e| e.to_string())?;
+
+    //复制书籍文件
+    let dest_path = books_dir.join(&book_data.id);
+    fs::copy(&book_data.file_path, &dest_path).map_err(|e| e.to_string())?;
+
+    //更新书籍路径
+    book_data.file_path = dest_path.to_string_lossy().into_owned();
+
+    let cover_info = cover_data.as_ref().map(|data| (data.as_slice(), "image/jpeg"));
+    state.db
+    .lock()
+    .unwrap()
+    .save_book(&book_data, cover_info)
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 #[command]
-fn get_last_file(state: State<'_, AppState>) -> Option<FileInfo> {
-    state.get_last_file()
+async fn get_cover(
+    state: State<'_, AppState>,
+    book_id: String
+) -> Result<Option<Vec<u8>>, String> {
+    // 从数据库获取封面
+    let cover_result = state.db
+        .lock()
+        .unwrap()
+        .get_cover(&book_id)
+        .map_err(|e| e.to_string())?;
+    
+    Ok(cover_result.map(|(data, _)| data))
 }
 
-#[command]
-fn get_last_file_path(state: State<'_, AppState>) -> Option<String> {
-    state.get_last_file_path()
-}
+// #[command]
+// async fn delete_book(
+//     state: State<'_, AppState>,
+//     book_id: String
+// ) -> Result<(), String> {
+//     let db = state.db.lock().unwrap();
+    
+//     // 删除书籍文件
+//     if let Some(book) = db.get_book_by_id(&book_id).map_err(|e| e.to_string())? {
+//         let book_path = Path::new(&book.file_path);
+//         if book_path.exists() {
+//             fs::remove_file(book_path).map_err(|e| e.to_string())?;
+//         }
+//     }
+
+//     // 删除数据库记录（会通过外键约束自动删除封面）
+//     db.delete_book(&book_id).map_err(|e| e.to_string())?;
+
+//     Ok(())
+// }
 
 pub fn run() {
     fs::create_dir_all("./uploadBooks").expect("Failed to create directory");
 
     tauri::Builder::default()
         .manage(AppState {
-            last_file: Mutex::new(None),
-            last_file_path: Mutex::new(None),
+            db: Mutex::new(Database::new("books.db").unwrap()),
         })
         .invoke_handler(tauri::generate_handler![
-            upload_file_chunk, 
-            get_last_file,
-            get_last_file_path,
+            save_book,
+            get_cover,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
