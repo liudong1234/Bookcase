@@ -1,45 +1,52 @@
-import { invoke } from "@tauri-apps/api/core";
 
 import { Button, Upload, message } from "antd";
+import { useEffect, useState } from "react";
+import { bookOperations } from "../services/bookOperations";
+import { ParserFactory } from "../utils/bookParser/ParserFactory";
+import { getMimeType } from "../utils/FileDetector";
 
-const getMimeType = (filename) => {
-  const ext = filename.split('.').pop().toLowerCase();
-  const mimeTypes = {
-    'pdf': 'application/pdf',
-    'txt' : "application/txt", 
-    'epub' : "application/epub+zip", 
-    'md' : "application/md", 
-    'markdown' : "application/md", 
-    // 可以根据需要添加更多类型
-  };
-  
-  return mimeTypes[ext] || 'application/octet-stream';
-}
+import { invoke } from "@tauri-apps/api/core";
 
-const pathToFile = async (filePath, filename = null) => {
+import { writeFile, BaseDirectory } from "@tauri-apps/plugin-fs";
+
+
+const saveCoverImage = async (id, blob) => {
   try {
-    // 直接使用 Tauri 命令读取文件
-    const fileBytes = await invoke('read_file', { path: filePath });
-    
-    // 从路径中提取文件名
-    const filename = filePath.split(/[/\\]/).pop();
-    
-    // 创建 Blob 对象
-    const blob = new Blob([new Uint8Array(fileBytes)], {
-      type: getMimeType(filename) // 根据文件扩展名获取 MIME 类型
-    });
-    
-    // 创建 File 对象
-    return new File([blob], filename, { type: blob.type });
+    // 将 Blob 转换为 ArrayBuffer
+    const arrayBuffer = await blob.arrayBuffer();
+    const filePath = 'data\\' + id + '\\' + id + '.jpg';
+    // 获取文件保存路径，假设我们将文件保存到应用的文档目录下
+    await writeFile(filePath , arrayBuffer, { baseDir: BaseDirectory.AppData });  // 指定文件名
+
+    console.log("封面图片已保存:", filePath);
   } catch (error) {
-    console.error('转换文件失败:', error);
-    throw error;
+    console.error("保存封面图片时出错:", error);
   }
-}
+};
 
-
-const CustomUpload = ({ handleSetSavePath }) => {
+const CustomUpload = ({books, onResult}) => {
   const Chunk_SIZE = 1024 * 1024 * 3; // 1MB
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const booksFromDB = await bookOperations.getAllBooks();
+        
+        const covers = {};
+        for (const book of booksFromDB) {
+          const coverBlob = await bookOperations.getCover(book.id);
+          if (coverBlob) {
+            covers[book.id] = URL.createObjectURL(coverBlob);
+          }
+        }
+        setBooks(booksFromDB);
+        setBookCovers(covers);
+      } catch (error) {
+        // message.error('加载书架数据失败', error);
+      }
+    };
+    loadData();
+  }, []);
+
   const handleUpload = ({ file, onProgress, onSuccess, onError }) => {
     const reader = new FileReader();
     let chunkIndex = 0;
@@ -61,8 +68,22 @@ const CustomUpload = ({ handleSetSavePath }) => {
       try {
         const uintArray = new Uint8Array(e.target.result);
 
-        await invoke("upload_file_chunk", {
+        // 检查书籍是否已存在
+        const isBookExists = books.some(b =>
+          b.name === file.name &&
+          b.size === file.size
+        );
+
+        if (isBookExists) {
+          message.info('书籍已存在');
+          onError();
+          return;
+        }
+        // 生成书籍唯一ID
+        const bookId = Date.now().toString();
+        let lastPath = await invoke("upload_file_chunk", {
           chunk: Array.from(uintArray),
+          id: bookId,
           fileName: file.name,
           chunkIndex,
           totalChunks,
@@ -80,14 +101,39 @@ const CustomUpload = ({ handleSetSavePath }) => {
         } else {
           onSuccess({ status: "done" }, file);
           message.success(`${file.name} 上传成功`);
-          const lastPath = await invoke("get_last_file_path");
-          const file2 = await pathToFile(lastPath);
-          console.log(file2);
-          handleSetSavePath(file2);
+
+          const parser = ParserFactory.getParser(file.type, file.name);
+          // 获取并存储封面
+          const coverBlob = await parser.getCover(file);
+          let has_cover = false;
+          if (coverBlob) {
+            has_cover = true;
+            saveCoverImage(bookId, coverBlob);
+          }
+          let type = file.type;
+          if (file.type === '') {
+            type = getMimeType(file.name);
+          }
+
+          // 存储书籍数据
+          const bookData = {
+            id: bookId,
+            name: file.name,
+            size: file.size,
+            file_type: type,
+            last_modified: file.lastModified,
+            file_path: lastPath,
+            has_cover: has_cover
+          };
+
+          await bookOperations.saveBook(bookData);
+          await bookOperations.saveCover(bookId, coverBlob.type);
+          onResult();
+          message.success('书籍添加成功！');
         }
       } catch (err) {
         onError(err);
-        message.error(`上传失败: ${err.message}`);
+        message.error(`上传失败: ${err}`);
       }
     };
 
@@ -111,11 +157,6 @@ const CustomUpload = ({ handleSetSavePath }) => {
   return (
     <Upload
       customRequest={handleUpload}
-      onChange={({ file }) => {
-        if (file.status === "error") {
-          message.error(`${file.name} 上传失败`);
-        }
-      }}
     >
       <Button>上传文件</Button>
     </Upload>

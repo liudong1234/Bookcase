@@ -1,41 +1,98 @@
 import React, { useEffect, useState } from "react";
-import { Layout } from "antd";
+import { Layout, message } from "antd";
 import { AppstoreTwoTone, ProfileTwoTone } from "@ant-design/icons";
 
 import CustomUpload from "./components/CustomUpload";
 import SideBar from "./components/SideBar";
 import ContentView from "./components/ContentView";
 import { MenuProvider } from "./contexts/MenuContext";
+import { readFile, BaseDirectory } from "@tauri-apps/plugin-fs";
+import { bookOperations } from "./services/bookOperations";
 
 import "./App.css";
 
+import { getMimeType } from "./utils/FileDetector";
+
 const { Header, Content } = Layout;
 
+
 const App = () => {
-  const [bookfile, setBookfile] = useState(null);
+  // const [bookfile, setBookfile] = useState(null);
+  // ui控制
   const [siderBarHidden, setSiderBarHidden] = useState(false);
   const [bookshelfStyle, setBookshelfStyle] = useState(false);
   const [headerOpen, setHeaderOpen] = useState(true);
-  const [savePath, setSavePath] = useState("");
+  const [result, setResult] = useState(false);
+  //书籍信息
+  const [books, setBooks] = useState([]);
+  const [bookCovers, setBookCovers] = useState({});
+
+
+  const loadData = async () => {
+    try {
+      // debugger;
+      const booksFromDB = await bookOperations.getAllBooks();
+      
+      const covers = {};
+      for (const book of booksFromDB) {
+        const coverName = await bookOperations.getCover(book.id);
+        if (coverName !== '') {
+
+          const filePath = 'data\\' + book.id + '\\' + book.id + '.jpg';
+          const fileBytes = await readFile(filePath, { baseDir: BaseDirectory.AppData });
+
+          // 从路径中提取文件名
+          const filename = filePath.split(/[/\\]/).pop();
+
+          // 创建 Blob 对象
+          const blob = new Blob([new Uint8Array(fileBytes)], {
+            type: getMimeType(filename) // 根据文件扩展名获取 MIME 类型
+          });
+
+          covers[book.id] = blob;
+        }
+      }
+      setBooks(booksFromDB);
+      setBookCovers(covers);
+    } catch (error) {
+      // message.error('加载书架数据失败', error);
+      console.log('加载书架数据失败或者数据库我为空')
+    }
+  };
+  // 初始化加载数据
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [result]);
+
+  //
   const changeBookshelfStyle = () => {
     setBookshelfStyle(!bookshelfStyle); //false格子， true列表
-  };
-  useEffect(() => {
-    console.log(savePath);
-    setBookfile(savePath);
-  }, [savePath])
-  const handleSetSavePath = (path) => {
-    setSavePath(path);
-  };
-
-  const handleBookParsed = () => {
-    setBookfile(null);
   };
   const handleHideSiderBar = (value) => {
     setHeaderOpen(!value);
     setSiderBarHidden(value);
   };
-
+  const handleDeleteBook = async (bookId) => {
+    try {
+      await bookOperations.deleteBook(bookId); //删除书籍的同时删除封面
+      setBooks(prev => prev.filter(b => b.id !== bookId));
+      setBookCovers(prev => {
+        const newCovers = { ...prev };
+        delete newCovers[bookId];
+        return newCovers;
+      });
+      message.success('书籍已删除');
+    } catch (error) {
+      message.error(error);
+    }
+  }
+  const handleResult = () => {
+    setResult(!result);
+  }
   return (
     <Layout style={{ minHeight: "100vh" }}>
       {headerOpen && (
@@ -43,7 +100,7 @@ const App = () => {
           <h1>Bookcase 📚</h1>
           <div style={{ display: "flex", alignItems: "center", gap: "30px" }}>
             <div>
-              <CustomUpload handleSetSavePath={handleSetSavePath} />
+              <CustomUpload books={books} onResult={handleResult} />
             </div>
             <div>
               <span
@@ -63,10 +120,11 @@ const App = () => {
           <SideBar hidden={siderBarHidden} />
           <Content>
             <ContentView
-              bookfile={bookfile}
+              books={books}
+              bookCovers={bookCovers}
               bookshelfSettings={{
-                handleBookParsed,
                 handleHideSiderBar,
+                handleDeleteBook,
                 bookshelfStyle,
               }}
             />

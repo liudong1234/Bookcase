@@ -11,3 +11,17 @@ export const useFileDetector = () => {
 
   return [fileInfo, detectFileType]
 }
+
+export const getMimeType = (filename) => {
+  const ext = filename.split('.').pop().toLowerCase();
+  const mimeTypes = {
+    'pdf': 'application/pdf',
+    'txt' : "application/txt", 
+    'epub' : "application/epub+zip", 
+    'md' : "application/md", 
+    'markdown' : "application/md", 
+    // 可以根据需要添加更多类型
+  };
+  
+  return mimeTypes[ext] || 'application/octet-stream';
+}

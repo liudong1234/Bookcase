@@ -76,7 +76,7 @@ const generateCoverImage = async (text) => {
       } else {
         resolve(null); // 返回 null，如果没有成功生成 blob
       }
-    }, 'image/png');  // 这里使用 PNG 格式
+    }, 'image/jpg');  // 这里使用 PNG 格式
   });
 };
 

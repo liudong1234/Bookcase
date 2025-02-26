@@ -1,13 +1,14 @@
 import React, { useContext } from "react";
 import { MenuContext } from "../contexts/MenuContext";
 import Bookshelf from "./Bookshelf";
-const ContentView = ({ bookfile, bookshelfSettings, uploadResult }) => {
+const ContentView = ({ books, bookCovers, bookshelfSettings }) => {
   const { selectedMenu } = useContext(MenuContext);
   return (
     <div>
       {selectedMenu === "1" &&
         <Bookshelf
-          bookfile={bookfile}
+          books={books}
+          bookCovers={bookCovers}
           bookshelfSettings={bookshelfSettings}
         />
       }
