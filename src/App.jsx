@@ -11,8 +11,6 @@ import { bookOperations } from "./services/bookOperations";
 
 import "./App.css";
 
-import { getMimeType } from "./utils/FileDetector";
-
 const { Header, Content } = Layout;
 
 
@@ -36,27 +34,24 @@ const App = () => {
       const covers = {};
       for (const book of booksFromDB) {
         const coverName = await bookOperations.getCover(book.id);
-        if (coverName !== '') {
-
-          const filePath = 'data\\' + book.id + '\\' + book.id + '.jpg';
+        if (coverName !== '' && coverName !== null) {
+          // 类型中提取后缀
+          const suffix = coverName.split(/[/\\]/).pop();
+          const filePath = 'data\\' + book.id + '\\' + book.id + '.' + suffix;
           const fileBytes = await readFile(filePath, { baseDir: BaseDirectory.AppData });
 
-          // 从路径中提取文件名
-          const filename = filePath.split(/[/\\]/).pop();
 
           // 创建 Blob 对象
           const blob = new Blob([new Uint8Array(fileBytes)], {
-            type: getMimeType(filename) // 根据文件扩展名获取 MIME 类型
+            type: coverName // 根据文件扩展名获取 MIME 类型
           });
-
-          covers[book.id] = blob;
+          covers[book.id] = URL.createObjectURL(blob);
         }
       }
       setBooks(booksFromDB);
       setBookCovers(covers);
     } catch (error) {
-      // message.error('加载书架数据失败', error);
-      console.log('加载书架数据失败或者数据库我为空')
+      message.error('加载书架数据失败或者数据库我为空')
     }
   };
   // 初始化加载数据
@@ -78,7 +73,6 @@ const App = () => {
   };
   const handleDeleteBook = async (bookId) => {
     try {
-      await bookOperations.deleteBook(bookId); //删除书籍的同时删除封面
       setBooks(prev => prev.filter(b => b.id !== bookId));
       setBookCovers(prev => {
         const newCovers = { ...prev };
@@ -86,6 +80,7 @@ const App = () => {
         return newCovers;
       });
       message.success('书籍已删除');
+      await bookOperations.deleteBook(bookId); //删除书籍的同时删除封面
     } catch (error) {
       message.error(error);
     }

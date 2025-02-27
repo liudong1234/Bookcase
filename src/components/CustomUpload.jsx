@@ -1,5 +1,5 @@
 
-import { Button, Upload, message } from "antd";
+import { Button, Upload, message, Progress } from "antd";
 import { useEffect, useState } from "react";
 import { bookOperations } from "../services/bookOperations";
 import { ParserFactory } from "../utils/bookParser/ParserFactory";
@@ -14,18 +14,22 @@ const saveCoverImage = async (id, blob) => {
   try {
     // 将 Blob 转换为 ArrayBuffer
     const arrayBuffer = await blob.arrayBuffer();
-    const filePath = 'data\\' + id + '\\' + id + '.jpg';
+    const type = await blob.type;
+    const suffix = type.split(/[/\\]/).pop();
+    const filePath = 'data\\' + id + '\\' + id + '.' + suffix;
     // 获取文件保存路径，假设我们将文件保存到应用的文档目录下
     await writeFile(filePath , arrayBuffer, { baseDir: BaseDirectory.AppData });  // 指定文件名
 
-    console.log("封面图片已保存:", filePath);
+    // console.log("封面图片已保存:", filePath);
   } catch (error) {
-    console.error("保存封面图片时出错:", error);
+    // console.error("保存封面图片时出错:", error);
   }
 };
 
 const CustomUpload = ({books, onResult}) => {
-  const Chunk_SIZE = 1024 * 1024 * 3; // 1MB
+  const Chunk_SIZE = 1024 * 1024 * 5; // 1MB
+  const [percent, setPercent] = useState(0);
+  const [status, setStatus] = useState('');
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -95,13 +99,12 @@ const CustomUpload = ({books, onResult}) => {
           99 // 保持 99% 直到完成
         );
         onProgress({ percent }, file);
+        setPercent(percent);
 
         if (++chunkIndex < totalChunks) {
           readNextChunk();
         } else {
           onSuccess({ status: "done" }, file);
-          message.success(`${file.name} 上传成功`);
-
           const parser = ParserFactory.getParser(file.type, file.name);
           // 获取并存储封面
           const coverBlob = await parser.getCover(file);
@@ -129,16 +132,19 @@ const CustomUpload = ({books, onResult}) => {
           await bookOperations.saveBook(bookData);
           await bookOperations.saveCover(bookId, coverBlob.type);
           onResult();
+          setPercent(100);
           message.success('书籍添加成功！');
         }
       } catch (err) {
         onError(err);
+        setStatus('exception');
         message.error(`上传失败: ${err}`);
       }
     };
 
     reader.onerror = () => {
       onError(new Error("文件读取失败"));
+      setStatus('exception');
       message.error("文件读取失败");
     };
 
@@ -155,10 +161,16 @@ const CustomUpload = ({books, onResult}) => {
   };
 
   return (
-    <Upload
+    <Upload 
       customRequest={handleUpload}
+      showUploadList={false}
     >
-      <Button>上传文件</Button>
+      {
+        percent > 0 && percent < 100 && (
+          <Progress type="circle" percent={percent} size={25} status={status} />
+        )
+      }
+      <Button>导入文件</Button>
     </Upload>
   );
 };

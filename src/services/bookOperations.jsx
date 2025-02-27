@@ -28,13 +28,8 @@ export const bookOperations = {
 
   // 获取封面
   getCover: async (bookId) => {
-    const coverData = await invoke('get_cover', { bookId: bookId });
-    
-    if (coverData) {
-      return new Blob([new Uint8Array(coverData)], { type: 'image/jpeg' });
-    }
-    
-    return null;
+    const coverData = await invoke('get_cover', { bookId: bookId });    
+    return coverData;
   },
 
   // 获取指定ID的书籍

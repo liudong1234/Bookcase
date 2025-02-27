@@ -100,9 +100,10 @@ impl Database {
           book_id, mime_type) values(
           ?1, ?2)", (
             &id,
-            cover_type,
+            &cover_type,
           ))?;
       }
+      tx.commit()?;
       Ok(())
     }
 

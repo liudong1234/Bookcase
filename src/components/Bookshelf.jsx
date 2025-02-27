@@ -1,15 +1,18 @@
-import { useState } from 'react';
-import { Card, Avatar, List, Button, Empty } from 'antd';
+import React, { useState, Suspense } from 'react';
+import { Card, Avatar, List, Button, Empty, Spin } from 'antd';
+import { StarTwoTone } from '@ant-design/icons';
 const { Meta } = Card;
+
 import { readFile, BaseDirectory } from "@tauri-apps/plugin-fs";
-import { bookOperations } from '../services/bookOperations';
-import BookReader from './BookReader';
-import './Bookshelf.css'
+// import BookReader from './BookReader';
 import { getMimeType } from '../utils/FileDetector';
+import './Bookshelf.css';
+const LazyBookReader = React.lazy(() => import('./BookReader'));
+const ContainerHeight = 400;
 
 const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
   const { handleHideSiderBar, handleDeleteBook, bookshelfStyle } = bookshelfSettings;
-
+  
   const [currentBook, setCurrentBook] = useState(null);
   const [hoveredBookId, setHoveredBookId] = useState(null); // 新增：记录当前悬浮的书籍 ID
   const handleClickBook = async (book) => {
@@ -37,10 +40,14 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
   return (
     <div>
       {currentBook ? (
-        <BookReader
-          book={currentBook}
-          onClose={() => { setCurrentBook(null); handleHideSiderBar(false); }}
-        />
+        <Suspense fallback={<Spin
+          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
+          size="large" />}>
+          <LazyBookReader 
+            book={currentBook}
+            onClose={() => { setCurrentBook(null); handleHideSiderBar(false);}}
+          />
+        </Suspense>
       ) : (
         <div className="bookshelf-container">
           {books === undefined || books.length === 0 ? (
@@ -66,6 +73,7 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
                                 <div className="cover-overlay">
                                   <button onClick={() => { handleClickBook(book); handleHideSiderBar(true); }}>阅读</button>
                                   <button onClick={() => handleDeleteBook(book.id)}>删除</button>
+                                  <button onClick={(event) => { event.stopPropagation();  }}>收藏</button>
                                 </div>
                               )}
                             </div>
@@ -87,9 +95,13 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
                     className='bookshelf-booklist'
                     itemLayout="horizontal"
                     dataSource={books}
+                    height={ContainerHeight}
                     renderItem={(item, index) => (
                       <List.Item onClick={() => { handleClickBook(item); handleHideSiderBar(true); }}
-                        actions={[<Button onClick={(event) => { event.stopPropagation(); handleDeleteBook(item.id) }}>删除书籍</Button>]}>
+                        actions={[
+                        <Button onClick={(event) => { event.stopPropagation(); handleDeleteBook(item.id) }}>删除书籍</Button>,
+                        <span style={{fontSize: "20px"}}><StarTwoTone onClick={(event) => { event.stopPropagation(); }}/></span>
+                        ]}>
                         <List.Item.Meta
                           avatar={<Avatar src={bookCovers[item.id]} />}
                           title={item.name}
