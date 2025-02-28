@@ -6,9 +6,9 @@ const { Meta } = Card;
 import { readFile, BaseDirectory } from "@tauri-apps/plugin-fs";
 // import BookReader from './BookReader';
 import { getMimeType } from '../utils/FileDetector';
+
 import './Bookshelf.css';
 const LazyBookReader = React.lazy(() => import('./BookReader'));
-const ContainerHeight = 400;
 
 const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
   const { handleHideSiderBar, handleDeleteBook, bookshelfStyle } = bookshelfSettings;
@@ -29,7 +29,7 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
       });
 
       // 创建 File 对象
-      setCurrentBook(new File([blob], filename, { type: blob.type }));
+        setCurrentBook(new File([blob], filename, { type: blob.type }));
     } catch (error) {
       console.error('转换文件失败:', error);
       throw error;
@@ -95,7 +95,7 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
                     className='bookshelf-booklist'
                     itemLayout="horizontal"
                     dataSource={books}
-                    height={ContainerHeight}
+                    // height={ContainerHeight}
                     renderItem={(item, index) => (
                       <List.Item onClick={() => { handleClickBook(item); handleHideSiderBar(true); }}
                         actions={[

@@ -181,7 +181,6 @@ const EpubRenderer = ({
     setUiState('openToc', false);
   }
 
-
   const navigationHandlers = {
     handlePrevPage: () => {
       readerState.rendition?.prev();

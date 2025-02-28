@@ -4,13 +4,14 @@ import "./BookReader.css";
 import EpubRenderer from "./Renderer/EpubRenderer";
 import PDFRenderer from "./Renderer/PdfRenderer";
 import MarkdownRenderer from "./Renderer/MarkdownRenderer";
-
+import MobiRenderer from "./Renderer/MobiRenderer";
 // Define renderer mapping
 const RENDERERS = {
   epub: EpubRenderer,
   pdf: PDFRenderer,
   md: MarkdownRenderer,
   txt: MarkdownRenderer,
+  mobi: MobiRenderer,
 };
 
 const BookReader = ({ book, onClose }) => {

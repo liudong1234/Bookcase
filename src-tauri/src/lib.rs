@@ -15,7 +15,6 @@ struct AppState {
     db: Mutex<Database>,
 }
 
-
 fn get_appdata_dir() -> PathBuf {
     let proj_dirs = ProjectDirs::from("com", "", "Bookcase")
         .expect("未找到应用程序目录");

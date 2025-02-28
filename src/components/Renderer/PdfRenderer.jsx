@@ -11,8 +11,6 @@ import {
   ZoomInOutlined,
   ZoomOutOutlined,
   ArrowLeftOutlined,
-  ArrowRightOutlined,
-  RollbackOutlined,
   FullscreenOutlined,
 } from "@ant-design/icons";
 import "@react-pdf-viewer/core/lib/styles/index.css";

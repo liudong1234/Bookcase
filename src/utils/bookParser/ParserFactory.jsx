@@ -1,7 +1,7 @@
 import EpubParser from "./EpubParser";
 import MarkdownParser from "./MarkdownParser";
 import PdfParser from "./PdfParser";
-
+import MobiParser from "./MobiParser";
 class ParserFactory {
   static parsers = {
     "application/epub+zip": new EpubParser(),
@@ -9,6 +9,7 @@ class ParserFactory {
     "application/md": new MarkdownParser(),
     "application/markdown": new MarkdownParser(),
     "application/txt": new MarkdownParser(),
+    "application/mobi": new MobiParser(),
   };
 
   static getParser(mimeType, bookName) {

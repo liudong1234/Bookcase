@@ -20,6 +20,7 @@ export const getMimeType = (filename) => {
     'epub' : "application/epub+zip", 
     'md' : "application/md", 
     'markdown' : "application/md", 
+    'mobi': "application/mobi",
     // 可以根据需要添加更多类型
   };
   

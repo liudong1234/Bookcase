@@ -1,6 +1,6 @@
 /* Bookshelf.css */
 .bookshelf-container {
-    max-height: 536px;
+    max-height: 90vh;
     overflow-y: auto;
 }
 

@@ -14,15 +14,13 @@ const saveCoverImage = async (id, blob) => {
   try {
     // 将 Blob 转换为 ArrayBuffer
     const arrayBuffer = await blob.arrayBuffer();
-    const type = await blob.type;
-    const suffix = type.split(/[/\\]/).pop();
+    const suffix = blob.type.split(/[/\\]/).pop() || 'jpg';
     const filePath = 'data\\' + id + '\\' + id + '.' + suffix;
     // 获取文件保存路径，假设我们将文件保存到应用的文档目录下
     await writeFile(filePath , arrayBuffer, { baseDir: BaseDirectory.AppData });  // 指定文件名
-
     // console.log("封面图片已保存:", filePath);
   } catch (error) {
-    // console.error("保存封面图片时出错:", error);
+    console.error("保存封面图片时出错:", error);
   }
 };
 
@@ -117,7 +115,10 @@ const CustomUpload = ({books, onResult}) => {
           if (file.type === '') {
             type = getMimeType(file.name);
           }
-
+          let coverType = coverBlob.type;
+          if (coverType === '') {
+            coverType = 'image/jpg';
+          }
           // 存储书籍数据
           const bookData = {
             id: bookId,
@@ -130,7 +131,7 @@ const CustomUpload = ({books, onResult}) => {
           };
 
           await bookOperations.saveBook(bookData);
-          await bookOperations.saveCover(bookId, coverBlob.type);
+          await bookOperations.saveCover(bookId, coverType);
           onResult();
           setPercent(100);
           message.success('书籍添加成功！');

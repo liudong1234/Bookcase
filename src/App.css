@@ -5,6 +5,7 @@
 
 .app-header {
   background-color: #e4e3e3;
+  max-height: 64px;
   display: flex;
   justify-content: space-between;
   padding: 10px 20px;
