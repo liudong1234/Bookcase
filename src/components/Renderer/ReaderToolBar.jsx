@@ -63,12 +63,12 @@ const ReaderToolbar = ({
       <Tooltip title="目录">
         <Button icon={<MenuOutlined />} onClick={onTocClick} />
       </Tooltip>
-      <Tooltip title="全屏">
+      {/* <Tooltip title="全屏">
         <Button
           icon={document.fullscreenElement ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
           onClick={() => { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }}
         />
-      </Tooltip>
+      </Tooltip> */}
       <Tooltip title="设置">
         <Button icon={<SettingTwoTone />} onClick={onSettingsClick} />
       </Tooltip>

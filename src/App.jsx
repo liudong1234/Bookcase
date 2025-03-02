@@ -7,7 +7,7 @@ import SideBar from "./components/SideBar";
 import ContentView from "./components/ContentView";
 import { MenuProvider } from "./contexts/MenuContext";
 import { readFile, BaseDirectory } from "@tauri-apps/plugin-fs";
-import { bookOperations } from "./services/bookOperations";
+import { bookOperations } from "./services/BookOperations";
 
 import "./App.css";
 

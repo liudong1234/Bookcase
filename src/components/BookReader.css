@@ -44,6 +44,8 @@
 /* BookReader.css 中添加 */
 .toc-item {
   transition: background-color 0.3s;
+  height: 100%;
+  overflow: auto,
 }
 
 .toc-item:hover {

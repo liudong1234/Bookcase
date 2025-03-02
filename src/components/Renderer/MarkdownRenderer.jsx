@@ -6,8 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 
-import MenuTocItem from "./MenuTocItem";
-import { getItemKey } from "./MenuTocItem";
+import MenuTocItem, { getItemKey } from "./MenuTocItem";
 import ReaderToolbar from "./ReaderToolBar";
 import SettingsModal from "./SettingsModal";
 const MarkdownRenderer = ({
@@ -117,11 +116,17 @@ const MarkdownRenderer = ({
     if (markdownRef.current) {
       markdownRef.current.style.fontSize = `${readerSettings.fontSize}px`;
       markdownRef.current.style.fontFamily = readerSettings.fontFamily;
-      markdownRef.current.style.backgroundColor = readerTheme === "light" ? "#fff" : "#1f1f1f";
       markdownRef.current.style.color = readerTheme === "light" ? "#000" : "#fff";
     }
     eventHandlers.onRenditionReady(rendition);
   }, [readerSettings]);
+  
+  useEffect(() => {
+    if (markdownRef.current) {
+      markdownRef.current.style.backgroundColor = readerTheme === "light" ? "#fff" : "#000";
+      markdownRef.current.style.color = readerTheme === "light" ? "#000" : "#fff";
+    }
+  }, [readerTheme])
 
   useEffect(() => {
     if (book instanceof File) {
@@ -185,18 +190,16 @@ const MarkdownRenderer = ({
   // Custom components for markdown rendering
   const markdownComponents = {
     // Headers with ID generation for TOC linking
-    
     h1: ({ node, ...props }) => (
       <h1
         id={`${readerState.toc.find(item => 
-          item.level === 1 && item.label === props.children.toString()).id}`}
+          item.level === 1 && item.label === props.children.toString())?.id}`}
         style={{
           borderBottom: '1px solid #eaecef',
           paddingBottom: '.3em',
           marginTop: '24px',
           marginBottom: '16px',
           fontSize: '2em',
-          color: readerTheme === "light" ? "#24292e" : "#ffffff"
         }}
         {...props}
       />
@@ -204,14 +207,13 @@ const MarkdownRenderer = ({
     h2: ({ node, ...props }) => (
       <h2
         id={`${readerState.toc.find(item => 
-          item.level === 2 && item.label === props.children.toString()).id}`}
+          item.level === 2 && item.label === props.children.toString())?.id}`}
         style={{
           borderBottom: '1px solid #eaecef',
           paddingBottom: '.3em',
           marginTop: '24px',
           marginBottom: '16px',
           fontSize: '1.5em',
-          color: readerTheme === "light" ? "#24292e" : "#ffffff"
         }}
         {...props}
       />
@@ -219,12 +221,23 @@ const MarkdownRenderer = ({
     h3: ({ node, ...props }) => (
       <h3
         id={`${readerState.toc.find(item => 
-          item.level === 3 && item.label === props.children.toString()).id}`}
+          item.level === 3 && item.label === props.children.toString())?.id}`}
         style={{
           marginTop: '24px',
           marginBottom: '16px',
           fontSize: '1.25em',
-          color: readerTheme === "light" ? "#24292e" : "#ffffff"
+        }}
+        {...props}
+      />
+    ),
+    h4: ({ node, ...props }) => (
+      <h4
+        id={`${readerState.toc.find(item => 
+          item.level === 4 && item.label === props.children.toString())?.id}`}
+        style={{
+          marginTop: '24px',
+          marginBottom: '16px',
+          fontSize: '1.0em',
         }}
         {...props}
       />
@@ -391,8 +404,8 @@ const MarkdownRenderer = ({
       <Header
         className="reader-header"
         style={{
-          background: readerTheme === "light" ? "#fff" : "#1f1f1f",
           borderBottom: "1px solid #e8e8e8",
+          backgroundColor: readerTheme === 'light'?'#f5f5f5':'#373536',
         }}
       >
         <Button
@@ -419,7 +432,11 @@ const MarkdownRenderer = ({
       </Header>
 
       <Content style={{ position: "relative", overflow: "hidden" }}>
-        <div ref={viewerRef} style={{ width: "100%", height: "100%", padding: "16px", overflowY: "auto" }}>
+        <div ref={viewerRef} style={{ 
+          width: "100%", height: "100%", 
+          padding: "16px", overflowY: "auto", 
+          background: readerTheme === "light" ? "#fff" : "#1f1f1f",
+        }}>
           <div ref={markdownRef}>
             <ReactMarkdown
               children={markdownContent}
@@ -431,6 +448,7 @@ const MarkdownRenderer = ({
         </div>
       </Content>
       <Drawer
+        className="my-toc-drawer"
         title="目录"
         placement="left"
         open={uiState.openToc}
@@ -438,16 +456,11 @@ const MarkdownRenderer = ({
         width={300}
         style={{
           background: readerTheme === "light" ? "#fff" : "#1f1f1f",
+          color: readerTheme == 'light' ? "#1f1f1f" : "#fff",
         }}
-        className="my-toc-drawer"
       >
         <div
           className="toc-list"
-          style={{
-            height: "100%",
-            overflow: "auto",
-            background: readerTheme === "light" ? "#fff" : "#1f1f1f",
-          }}
         >
           {readerState.toc.map((item, index) => (
             <MenuTocItem

@@ -1,7 +1,7 @@
 
 import { Button, Upload, message, Progress } from "antd";
 import { useEffect, useState } from "react";
-import { bookOperations } from "../services/bookOperations";
+import { bookOperations } from "../services/BookOperations";
 import { ParserFactory } from "../utils/bookParser/ParserFactory";
 import { getMimeType } from "../utils/FileDetector";
 

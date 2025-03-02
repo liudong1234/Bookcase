@@ -11,7 +11,6 @@ import { getItemKey } from "./MenuTocItem";
 import MobiParser from "../../utils/bookParser/MobiParser";
 
 import '../BookReader.css'
-import { use } from "react";
 
 const MobiRenderer = ({
   book,

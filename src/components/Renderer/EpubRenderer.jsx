@@ -190,13 +190,14 @@ const EpubRenderer = ({
     },
     handleTocSelect: (location) => {
       readerState.rendition?.display(location.href);
+      console.log(currentChapter);
+      console.log(readerState.toc);
       updateUiState('openToc', false);
     },
     onTocClose: () => {
       updateUiState('openToc', false);
     }
   };
-
   return (
     <>
       <Header
@@ -259,6 +260,7 @@ const EpubRenderer = ({
               item={item}
               tocSelectHandler={navigationHandlers.handleTocSelect}
               currentChapter={currentChapter} level={0}
+              allTocItems={readerState.toc}
             />
           ))}
         </div>

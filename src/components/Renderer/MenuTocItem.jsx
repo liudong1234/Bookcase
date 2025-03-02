@@ -1,74 +1,75 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CiCircleTwoTone } from "@ant-design/icons";
-  // TOC related utilities
-  export const getItemKey = (item, parentPath = "") => {
-    return `${parentPath}-${item.id || item.label}`;
-  };
 
-  const expandParentItems = (items, href, parentPath = "", expanded = {}) => {
-    for (const item of items) {
-      const itemKey = getItemKey(item, parentPath);
+export const getItemKey = (item, parentPath = "") => {
+  return `${parentPath}-${item.id || item.label}`;
+};
 
-      if (item.href === href) {
-        let currentPath = parentPath;
-        while (currentPath) {
-          expanded[currentPath] = true;
-          currentPath = currentPath.substring(0, currentPath.lastIndexOf("-"));
-        }
+const expandParentItems = (items, href, parentPath = "", expanded = {}) => {
+  for (const item of items) {
+    const itemKey = getItemKey(item, parentPath);
+
+    if (item.href === href || item.href.includes(href)) {
+      let currentPath = parentPath;
+      while (currentPath) {
+        expanded[currentPath] = true;
+        currentPath = currentPath.substring(0, currentPath.lastIndexOf("-"));
+      }
+      return true;
+    }
+
+    if (item.subitems?.length > 0) {
+      const found = expandParentItems(
+        item.subitems,
+        href,
+        getItemKey(item, parentPath),
+        expanded
+      );
+      if (found) {
+        expanded[itemKey] = true;
         return true;
       }
-
-      if (item.subitems?.length > 0) {
-        const found = expandParentItems(
-          item.subitems,
-          href,
-          getItemKey(item, parentPath),
-          expanded
-        );
-        if (found) {
-          expanded[itemKey] = true;
-          return true;
-        }
-      }
     }
-    return false;
-  };
+  }
+  return false;
+};
 
-
-const MenuTocItem = ({readerTheme, item, level = 0, tocSelectHandler, currentChapter, parentPath = "" }) => {
+const MenuTocItem = ({
+  readerTheme,
+  item,
+  level = 0,
+  tocSelectHandler,
+  currentChapter,
+  parentPath = "",
+  allTocItems,
+}) => {
   const [expandedItems, setExpandedItems] = useState({});
 
   const itemKey = getItemKey(item, parentPath);
   const hasSubItems = item.subitems?.length > 0;
   const isExpanded = expandedItems[itemKey] || false;
-  const isCurrentChapter = item.href === currentChapter;
+  const isCurrentChapter = item.href === currentChapter || item.href.includes(currentChapter);
 
-  // 处理目录项点击（支持展开/折叠和跳转）
+  // 监听 currentChapter 变化，自动展开父目录
+  useEffect(() => {
+    if (currentChapter) {
+      const newExpandedItems = {};
+      expandParentItems(allTocItems, currentChapter, "", newExpandedItems);
+      setExpandedItems(newExpandedItems);
+    }
+  }, [currentChapter, allTocItems]);
+
   const handleItemClick = (e) => {
     e.stopPropagation();
-
     if (hasSubItems) {
-      // 切换展开状态
       setExpandedItems((prev) => ({
         ...prev,
         [itemKey]: !isExpanded,
       }));
     } else {
-      // 跳转到对应位置
       tocSelectHandler(item);
     }
   };
-
-  // 处理子项箭头图标的点击（仅切换展开状态）
-  const handleArrowClick = (e) => {
-    e.stopPropagation();
-    setExpandedItems((prev) => ({
-      ...prev,
-      [itemKey]: !isExpanded,
-    }));
-  };
-
 
   return (
     <div className="toc-node">
@@ -93,7 +94,6 @@ const MenuTocItem = ({readerTheme, item, level = 0, tocSelectHandler, currentCha
         }}
         onClick={handleItemClick}
       >
-        {/* 展开/折叠箭头 */}
         {hasSubItems && (
           <span
             style={{
@@ -101,13 +101,11 @@ const MenuTocItem = ({readerTheme, item, level = 0, tocSelectHandler, currentCha
               transform: isExpanded ? "rotate(90deg)" : "none",
               transition: "transform 0.2s",
             }}
-            onClick={handleArrowClick}
           >
-            <CiCircleTwoTone />
+            <CiCircleTwoTone onClick={(e) => e.stopPropagation()} />
           </span>
         )}
 
-        {/* 目录标签 */}
         <span
           style={{
             flex: 1,
@@ -126,7 +124,6 @@ const MenuTocItem = ({readerTheme, item, level = 0, tocSelectHandler, currentCha
         </span>
       </div>
 
-      {/* 递归渲染子目录 */}
       {hasSubItems && isExpanded && (
         <div className="toc-children">
           {item.subitems.map((subitem, index) => (
@@ -138,6 +135,7 @@ const MenuTocItem = ({readerTheme, item, level = 0, tocSelectHandler, currentCha
               currentChapter={currentChapter}
               level={level + 1}
               parentPath={itemKey}
+              allTocItems={allTocItems}
             />
           ))}
         </div>
@@ -145,5 +143,6 @@ const MenuTocItem = ({readerTheme, item, level = 0, tocSelectHandler, currentCha
     </div>
   );
 };
+
 
 export default MenuTocItem;
