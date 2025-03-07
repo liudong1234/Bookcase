@@ -12,7 +12,7 @@ class MobiParser extends BookParser {
     }
   }
   async getCover(file) {
-    const mobi = await this.parse(file).mobi; 
+    const mobi = await this.parse(file); 
     const coverUrl = await mobi.getCover();
     if (coverUrl) {
       return coverUrl;

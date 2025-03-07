@@ -665,7 +665,7 @@ class MOBI6 {
     #textCache = new Map()
     #cache = new Map()
     #sections
-    #fileposList = []
+    fileposList = []
     #type = MIME.HTML
     constructor(mobi) {
         this.mobi = mobi
@@ -754,7 +754,7 @@ class MOBI6 {
         // get list of all `filepos` references in the book,
         // which will be used to insert anchor elements
         // because only then can they be referenced in the DOM
-        this.#fileposList = [...new Set(
+        this.fileposList = [...new Set(
             Array.from(str.matchAll(fileposRegex), m => m[1]))]
             .map(filepos => ({ filepos, number: Number(filepos) }))
             .sort((a, b) => a.number - b.number)
@@ -810,7 +810,7 @@ class MOBI6 {
         const { raw } = section
 
         // insert anchor elements for each `filepos`
-        const fileposList = this.#fileposList
+        const fileposList = this.fileposList
             .filter(({ number }) => number >= section.start && number < section.end)
             .map(obj => ({ ...obj, offset: obj.number - section.start }))
         let arr = raw

@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { Viewer, Worker, SpecialZoomLevel } from "@react-pdf-viewer/core";
+import React from "react";
+import { Viewer, Worker, SpecialZoomLevel, ProgressBar, ScrollMode } from "@react-pdf-viewer/core";
 import { pageNavigationPlugin } from "@react-pdf-viewer/page-navigation";
 import { zoomPlugin } from "@react-pdf-viewer/zoom";
 import { bookmarkPlugin } from "@react-pdf-viewer/bookmark";
 import { scrollModePlugin } from "@react-pdf-viewer/scroll-mode";
-import { ProgressBar } from "@react-pdf-viewer/core";
-import { Drawer, Button, Space, Select } from "antd";
+import { Drawer, Button, Space, Select, Modal } from "antd";
 import { Content, Header } from "antd/es/layout/layout";
 import {
   ZoomInOutlined,
@@ -17,7 +17,7 @@ import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/page-navigation/lib/styles/index.css";
 import "@react-pdf-viewer/zoom/lib/styles/index.css";
 import "@react-pdf-viewer/bookmark/lib/styles/index.css";
-
+import ReadingIndicator from "../../utils/ReadingIndicator";
 import ReaderToolbar from "./ReaderToolBar";
 
 const { Option } = Select;
@@ -73,7 +73,8 @@ const PDFRenderer = ({
   const scrollModePluginInstance = scrollModePlugin();
   const bookmarkPluginInstance = bookmarkPlugin();
 
-  const { jumpToPage, getPagesContainer } = pageNavigationPluginInstance;
+  const { jumpToPage, getPagesContainer, CurrentPageLabel } = pageNavigationPluginInstance;
+  const { SwitchScrollMode } = scrollModePluginInstance;
 
   const MAX_SCALE = 5; // 设置最大缩放倍数，可以根据需求调整
   const MIN_SCALE = 0.1; // 最小缩放倍数
@@ -128,7 +129,6 @@ const PDFRenderer = ({
         pageIndex: i,
       }))
     );
-
     const savedPage = localStorage.getItem(`pdf-progress-${book.name}`);
     if (savedPage) {
       const pageNumber = parseInt(savedPage, 10);
@@ -244,6 +244,7 @@ const PDFRenderer = ({
     setUiState("openToc", false);
   };
 
+
   return (
     <>
       <Header
@@ -281,7 +282,10 @@ const PDFRenderer = ({
         </ReaderToolbar>
       </Header>
       <Content style={{ position: "relative", overflow: "hidden" }}>
-      <div ref={viewerRef} style={{ width: "100%", height: "100%", padding: "16px", overflowY: "auto" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10 }}>
+          <ReadingIndicator currentPage={currentPage} totalPages={totalPages} />
+        </div>
+        <div ref={viewerRef} style={{ width: "100%", height: "100%", padding: "16px", overflowY: "auto" }}>
           <Worker workerUrl="/pdf.worker.min.js">
             {pdfUrl ? (
               <div
@@ -345,6 +349,49 @@ const PDFRenderer = ({
           <bookmarkPluginInstance.Bookmarks />
         )}
       </Drawer>
+      <Modal
+        open={uiState.openSettings}
+        onClose={() => updateUiState('openSettings', false)}
+        onCancel={() => updateUiState('openSettings', false)}
+        okText={"确认"}
+        cancelText={"取消"}
+      >
+        <Space >
+          <SwitchScrollMode mode={ScrollMode.Horizontal}>
+            {(props) =>
+              <Button
+                style={{
+                  backgroundColor: props.isSelected ? '#357edd' : 'transparent',
+                  borderColor: props.isSelected ? 'transparent' : '#357edd',
+                  color: props.isSelected ? '#fff' : '#000',
+
+                  borderRadius: '4px',
+                  borderStyle: 'solid',
+                  borderWidth: '1px',
+                  cursor: 'pointer',
+                  padding: '8px',
+                }}
+                onClick={props.onClick}
+              >水平阅读</Button>}
+          </SwitchScrollMode>
+          <SwitchScrollMode mode={ScrollMode.Vertical}>
+            {(props) =>
+              <Button
+                style={{
+                  backgroundColor: props.isSelected ? '#357edd' : 'transparent',
+                  borderColor: props.isSelected ? 'transparent' : '#357edd',
+                  color: props.isSelected ? '#fff' : '#000',
+
+                  borderRadius: '4px',
+                  borderStyle: 'solid',
+                  borderWidth: '1px',
+                  cursor: 'pointer',
+                  padding: '8px',
+                }}
+                onClick={props.onClick}>垂直阅读</Button>}
+          </SwitchScrollMode>
+        </Space>
+      </Modal>
     </>
   );
 };

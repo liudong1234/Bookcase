@@ -9,6 +9,7 @@ import ReaderToolbar from "./ReaderToolBar";
 import SettingsModal from "./SettingsModal";
 import MenuTocItem from "./MenuTocItem";
 import { getItemKey } from "./MenuTocItem";
+import ReadingIndicator from "../../utils/ReadingIndicator";
 
 const EpubRenderer = ({
   book,
@@ -16,7 +17,11 @@ const EpubRenderer = ({
   viewerRef
 }) => {
   // Local state
+  
   const [currentChapter, setCurrentChapter] = useState('');
+  const [totalChapters, setTotalChapters] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
     // Reader state
   const [readerState, setReaderState] = useState({
     currentLocation: null,
@@ -101,11 +106,10 @@ const EpubRenderer = ({
 
         // Notify parent about rendition
         readerEventHandlers.onRenditionReady(rendition);
-
         // Load and set TOC
         const navigation = await bookRef.current.loaded.navigation;
         readerEventHandlers.onTocChange(navigation.toc);
-
+        setTotalChapters(navigation.length);
         // Restore reading progress
         const savedCfi = localStorage.getItem(`book-progress-${book.name}`);
         rendition.display(savedCfi || undefined);
@@ -113,6 +117,7 @@ const EpubRenderer = ({
         // Apply theme settings
         applyThemeSettings(rendition);
 
+        //加载记录
         // Set up location change listener
         rendition.on("relocated", handleLocationChange);
       } catch (error) {
@@ -129,6 +134,17 @@ const EpubRenderer = ({
       }
     };
   }, [book, readerSettings.readingMode, readerSettings.managerMode]);
+
+  const updateProgress = (location) => {
+    // 计算百分比进度
+    const newProgress = (location.start.percentage * 100).toFixed(1);
+    setProgress(newProgress);
+    // 计算页码
+    const currentPage = location.start.displayed.page;
+    const totalPages = location.start.displayed.total;
+    setCurrentPage(currentPage);
+    setTotalPages(totalPages);
+  };
 
   // Apply theme settings when they change
   useEffect(() => {
@@ -149,9 +165,10 @@ const EpubRenderer = ({
   };
 
   const handleLocationChange = async (location) => {
-    // Save progress
+    // updateProgress(location);
+    setCurrentPage(location.start.index)
+    //保存在了浏览器中的localStorege   //后期应添加到数据库中。。。
     localStorage.setItem(`book-progress-${book.name}`, location.start.cfi);
-
     // Update current chapter
     const chapter = await bookRef.current.spine.get(location.start.cfi);
     if (chapter) {
@@ -190,8 +207,6 @@ const EpubRenderer = ({
     },
     handleTocSelect: (location) => {
       readerState.rendition?.display(location.href);
-      console.log(currentChapter);
-      console.log(readerState.toc);
       updateUiState('openToc', false);
     },
     onTocClose: () => {
@@ -230,6 +245,9 @@ const EpubRenderer = ({
         />
       </Header>
       <Content style={{ position: "relative", overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10 }}>
+        <ReadingIndicator currentPage={currentPage} totalPages={totalChapters} />
+        </div>
         <div ref={viewerRef} style={{ width: "100%", height: "100%" }}>
           {/* EPUB 内容将在此处渲染 */}
         </div>

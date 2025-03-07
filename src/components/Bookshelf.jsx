@@ -38,7 +38,7 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
 
   // 渲染书架
   return (
-    <div>
+    <>
       {currentBook ? (
         <Suspense fallback={<Spin
           style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
@@ -53,7 +53,7 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
           {books === undefined || books.length === 0 ? (
             <Empty description={'暂无书籍'}></Empty>
           ) : (
-            <div>
+            <>
               {
                 bookshelfStyle && (
                   <div className="book-grid">
@@ -95,7 +95,6 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
                     className='bookshelf-booklist'
                     itemLayout="horizontal"
                     dataSource={books}
-                    // height={ContainerHeight}
                     renderItem={(item, index) => (
                       <List.Item onClick={() => { handleClickBook(item); handleHideSiderBar(true); }}
                         actions={[
@@ -113,11 +112,11 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
                 )
               }
 
-            </div>
+            </>
           )}
         </div>
       )}
-    </div>
+    </>
   );
 };
 

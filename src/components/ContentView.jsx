@@ -4,7 +4,7 @@ import Bookshelf from "./Bookshelf";
 const ContentView = ({ books, bookCovers, bookshelfSettings }) => {
   const { selectedMenu } = useContext(MenuContext);
   return (
-    <div>
+    <>
       {selectedMenu === "1" &&
         <Bookshelf
           books={books}
@@ -12,9 +12,9 @@ const ContentView = ({ books, bookCovers, bookshelfSettings }) => {
           bookshelfSettings={bookshelfSettings}
         />
       }
-      {selectedMenu === "2" && <h2>ℹ️ 关于页面</h2>}
-      {selectedMenu === "3" && <h2>⚙️ 设置中心</h2>}
-    </div>
+      {selectedMenu === "2" && <h2>收藏</h2>}
+      {selectedMenu === "3" && <h2>笔记</h2>}
+    </>
   )
 }
 

@@ -9,9 +9,11 @@ import SettingsModal from "./SettingsModal";
 import MenuTocItem from "./MenuTocItem";
 import { getItemKey } from "./MenuTocItem";
 import MobiParser from "../../utils/bookParser/MobiParser";
-
+import ReadingIndicator from "../../utils/ReadingIndicator";
 import '../BookReader.css'
 
+//TODO 连续阅读模式，有待实现，
+//TODO 保存阅读记录
 const MobiRenderer = ({
   book,
   onLeftCloseHandler,
@@ -19,12 +21,13 @@ const MobiRenderer = ({
 }) => {
   const [mobibook, setMobiBook] = useState();
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [currentChapter, setCurrentChapter] = useState();
   const [sectionUrl, setSectionUrl] = useState(null);
   const [readerTheme, setReaderTheme] = useState('light');
   const [title, setTitle] = useState('');
   const [toolBar, setToolBar] = useState(true);
-
-
+  const [totalPages, setTotalPages] = useState(1);
+  const [extraToc, setExtraToc] = useState([]);
   const [readerState, setReaderState] = useState({
     currentLocation: null,
     toc: [],
@@ -76,6 +79,7 @@ const MobiRenderer = ({
   };
   const iframeRef = useRef(null);
   const bookRef = useRef(null);
+  const scrollTimeoutId = useRef(null);
 
   useEffect(() => {
     const loadBook = async () => {
@@ -87,6 +91,7 @@ const MobiRenderer = ({
         eventHandlers.onTocChange(toc);
         setMobiBook(bookRef.current);
         setTitle(t);
+        setTotalPages(bookRef.current.sections.length - 1);
       }
       catch (e) {
         console.error('Error loading MOBI file:', e);
@@ -96,13 +101,56 @@ const MobiRenderer = ({
       loadBook();
   }, []);
 
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    const handleLoad = () => {
+      const contentWindow = iframe.contentWindow;
+      
+      // 滚动监听处理
+      const handleScroll = () => {
+        const iframe = iframeRef.current;
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        // 为所有内部链接添加点击事件
+        const links = iframeDoc.querySelectorAll('a[id]');
+        const nonEmptyIds = Array.from(links)
+        .map(link => link.id.replace(/\D/g, ''))
+        .filter(id => id.trim() !== ''); // 过滤空值
+
+        clearTimeout(scrollTimeoutId.current);
+        scrollTimeoutId.current = setTimeout(() => {
+          const scrollY = contentWindow.scrollY;
+          localStorage.setItem(`book-progress-scroll-${title}`, scrollY);
+          localStorage.setItem(`book-progress-${title}`, 'filepos:'+ nonEmptyIds[0]);
+          setCurrentChapter('filepos:'+ nonEmptyIds[0]);
+        }, 100);
+      };
+  
+      contentWindow.addEventListener('scroll', handleScroll);
+      
+      return () => {
+        contentWindow.removeEventListener('scroll', handleScroll);
+      };
+    };
+  
+    iframe.addEventListener('load', handleLoad);
+    // 立即处理已加载的iframe
+    if (iframe.contentDocument?.readyState === 'complete') {
+      handleLoad();
+    }
+  
+    return () => {
+      iframe.removeEventListener('load', handleLoad);
+    };
+  }, [currentSectionIndex, title]); // 依赖章节变化和书名
+
   // 加载章节内容
   useEffect(() => {
     const loadSection = async () => {
       if (!mobibook || !mobibook.sections || !mobibook.sections[currentSectionIndex]) return;
 
       try {
-        console.log(mobibook.sections);
         const url = await mobibook.sections[currentSectionIndex].load();
         setSectionUrl(url);
       } catch (e) {
@@ -114,6 +162,23 @@ const MobiRenderer = ({
       loadSection();
     }
   }, [mobibook, currentSectionIndex]);
+
+  useEffect(() => {
+    const savedSection = localStorage.getItem(`book-progress-${title}`);
+    if (savedSection !== null) {
+      navigateToHref(savedSection);
+    }
+
+    // 恢复滚动位置
+    setTimeout(() => {
+      const savedScroll = localStorage.getItem(`book-progress-scroll-${title}`);
+      if (savedScroll !== null) {
+        console.log("scroll", savedScroll);
+        const iframeWindow = iframeRef.current?.contentWindow;
+        iframeWindow.scrollTo(0, savedScroll);
+      }
+    }, 100);
+  }, [mobibook])
 
   // 处理内部导航链接
   useEffect(() => {
@@ -142,7 +207,7 @@ const MobiRenderer = ({
         iframeRef.current.removeEventListener('load', handleIframeLoad);
       }
     };
-  }, [book, sectionUrl]);
+  }, [book, sectionUrl, currentChapter]);
 
   useEffect(() => {
     if (iframeRef.current) {
@@ -161,12 +226,12 @@ const MobiRenderer = ({
   // 导航到指定href
   const navigateToHref = (href) => {
     if (!mobibook || !href) return;
-    console.log(mobibook);
     try {
       const { index, anchor } = mobibook.resolveHref(href);
 
       if (index !== currentSectionIndex) {
         setCurrentSectionIndex(index);
+        setCurrentChapter(href);
       } else if (iframeRef.current) {
         const iframe = iframeRef.current;
         const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
@@ -245,6 +310,7 @@ const MobiRenderer = ({
       }
 
       <Content style={{ position: "relative", overflow: "hidden" }}>
+        <ReadingIndicator currentPage={currentSectionIndex} totalPages={totalPages}/>
         <div ref={viewerRef} className="mobi-iframe-container">
           {sectionUrl && (
             <iframe
@@ -283,7 +349,8 @@ const MobiRenderer = ({
               readerTheme={readerTheme}
               item={item}
               tocSelectHandler={navigationHandlers.handleTocSelect}
-              currentChapter={currentSectionIndex} level={0}
+              currentChapter={currentChapter} level={0}
+              allTocItems={readerState.toc}
             />
           ))}
         </div>

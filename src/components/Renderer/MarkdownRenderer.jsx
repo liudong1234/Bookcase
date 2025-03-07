@@ -14,10 +14,10 @@ const MarkdownRenderer = ({
   onLeftCloseHandler,
   viewerRef,
 }) => {
-  // const [toc, setToc] = useState([]);
   const [currentChapter, setCurrentChapter] = useState('');
   const [markdownContent, setMarkdownContent] = useState(''); // Changed to string
   const [readerTheme, setReaderTheme] = useState('light');
+  const scrollTimeout = useRef(null)
   const updateTheme = (value) => {
     setReaderTheme(value);
   }
@@ -41,6 +41,40 @@ const MarkdownRenderer = ({
   };
   const markdownRef = useRef(null);
   
+
+  useEffect(() => {
+    const container = viewerRef.current;
+    if (!container) return;
+  
+    const handleScroll = () => {
+      // 防抖处理
+      clearTimeout(scrollTimeout.current);
+      scrollTimeout.current = setTimeout(() => {
+        // 保存滚动位置
+        // setLastScrollPos(container.scrollTop);
+        
+        // 查找最近的标题
+        const headingElements = readerState.toc
+          .map(h => document.getElementById(h.href))
+          .filter(Boolean);
+        
+        const closest = headingElements.reduce((closest, el) => {
+          const rect = el.getBoundingClientRect();
+          return rect.top < 100 && rect.top > closest.top 
+            ? { el, top: rect.top } 
+            : closest;
+        }, { el: null, top: -Infinity });
+  
+        if (closest.el) {
+          setCurrentChapter(closest.el.id);
+          localStorage.setItem(`book-progress-${book.name}`, closest.el.id);
+        }
+      }, 200);
+    };
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [readerState.toc]);
+
   //设置参数
   const [readerSettings, setReaderSettings] = useState({
     fontSize: 16,
@@ -76,7 +110,7 @@ const MarkdownRenderer = ({
       readerState.rendition?.next();
     },
     handleTocSelect: (location) => {
-      readerState.rendition?.display(location.id);
+      readerState.rendition?.display(location.href);
       updateUiState('openToc', false);
     },
     onTocClose: () => {
@@ -99,12 +133,12 @@ const MarkdownRenderer = ({
     while ((match = regex.exec(text)) !== null) {
       const level = match[1].length;
       const label = match[2].trim();
-      const id = generateId(level);
+      const href = generateId(level);
 
       headers.push({
         level,
         label,
-        id,
+        href,
         index: headers.length
       });
     }
@@ -141,6 +175,12 @@ const MarkdownRenderer = ({
       setMarkdownContent(book);
       generateToc(book);
     }
+    const savedCfi = localStorage.getItem(`book-progress-${book.name}`);
+
+    setCurrentChapter(savedCfi);
+    setTimeout(() => {
+      scrollToHeader(savedCfi);
+    }, 500);
     eventHandlers.onRenditionReady(rendition);
   }, [book]);
 
@@ -193,7 +233,7 @@ const MarkdownRenderer = ({
     h1: ({ node, ...props }) => (
       <h1
         id={`${readerState.toc.find(item => 
-          item.level === 1 && item.label === props.children.toString())?.id}`}
+          item.level === 1 && item.label === props.children.toString())?.href}`}
         style={{
           borderBottom: '1px solid #eaecef',
           paddingBottom: '.3em',
@@ -207,7 +247,7 @@ const MarkdownRenderer = ({
     h2: ({ node, ...props }) => (
       <h2
         id={`${readerState.toc.find(item => 
-          item.level === 2 && item.label === props.children.toString())?.id}`}
+          item.level === 2 && item.label === props.children.toString())?.href}`}
         style={{
           borderBottom: '1px solid #eaecef',
           paddingBottom: '.3em',
@@ -221,7 +261,7 @@ const MarkdownRenderer = ({
     h3: ({ node, ...props }) => (
       <h3
         id={`${readerState.toc.find(item => 
-          item.level === 3 && item.label === props.children.toString())?.id}`}
+          item.level === 3 && item.label === props.children.toString())?.href}`}
         style={{
           marginTop: '24px',
           marginBottom: '16px',
@@ -233,7 +273,7 @@ const MarkdownRenderer = ({
     h4: ({ node, ...props }) => (
       <h4
         id={`${readerState.toc.find(item => 
-          item.level === 4 && item.label === props.children.toString())?.id}`}
+          item.level === 4 && item.label === props.children.toString())?.href}`}
         style={{
           marginTop: '24px',
           marginBottom: '16px',
@@ -470,6 +510,7 @@ const MarkdownRenderer = ({
               tocSelectHandler={navigationHandlers.handleTocSelect}
               currentChapter={currentChapter}
               level={item.level}
+              allTocItems={readerState.toc}
             />
           ))}
         </div>

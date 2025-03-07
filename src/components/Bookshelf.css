@@ -1,6 +1,6 @@
 /* Bookshelf.css */
 .bookshelf-container {
-    max-height: 90vh;
+    max-height: 100vh;
     overflow-y: auto;
 }
 
@@ -92,8 +92,10 @@
 
 .bookshelf-booklist {
     padding-left: 15px;
-    padding-top: 15px;
     cursor: pointer;
+}
+.ant-list-item {
+    padding-top: 10px;
 }
 
 .book-loading {

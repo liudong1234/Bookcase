@@ -48,7 +48,7 @@ const MenuTocItem = ({
   const itemKey = getItemKey(item, parentPath);
   const hasSubItems = item.subitems?.length > 0;
   const isExpanded = expandedItems[itemKey] || false;
-  const isCurrentChapter = item.href === currentChapter || item.href.includes(currentChapter);
+  const isCurrentChapter = item.href === currentChapter || item.href?.includes(currentChapter);
 
   // 监听 currentChapter 变化，自动展开父目录
   useEffect(() => {

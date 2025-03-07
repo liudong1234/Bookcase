@@ -11,7 +11,7 @@ import { bookOperations } from "./services/BookOperations";
 
 import "./App.css";
 
-const { Header, Content } = Layout;
+const { Header, Content, Footer } = Layout;
 
 
 const App = () => {
@@ -30,7 +30,7 @@ const App = () => {
     try {
       // debugger;
       const booksFromDB = await bookOperations.getAllBooks();
-      
+
       const covers = {};
       for (const book of booksFromDB) {
         const coverName = await bookOperations.getCover(book.id);
@@ -89,43 +89,46 @@ const App = () => {
     setResult(!result);
   }
   return (
-    <Layout style={{ minHeight: "100vh" }}>
-      {headerOpen && (
-        <Header className="app-header">
-          <h1>Bookcase 📚</h1>
-          <div style={{ display: "flex", alignItems: "center", gap: "30px" }}>
-            <div>
-              <CustomUpload books={books} onResult={handleResult} />
-            </div>
-            <div>
-              <span
-                className="settting-span"
-                onClick={() => changeBookshelfStyle()}
-              >
-                {bookshelfStyle && <AppstoreTwoTone />}
-                {!bookshelfStyle && <ProfileTwoTone />}
-              </span>
-            </div>
-          </div>
-        </Header>
-      )}
-
+    <Layout>
+      <MenuProvider>
+        <SideBar hidden={siderBarHidden} />
+      </MenuProvider>
       <Layout>
+        {headerOpen && (
+          <Header className="app-header">
+            <h1>Bookcase 📚</h1>
+            <div style={{ display: "flex", alignItems: "center", gap: "30px" }}>
+              <div>
+                <CustomUpload books={books} onResult={handleResult} />
+              </div>
+              <div>
+                <span
+                  className="settting-span"
+                  onClick={() => changeBookshelfStyle()}
+                >
+                  {bookshelfStyle && <AppstoreTwoTone />}
+                  {!bookshelfStyle && <ProfileTwoTone />}
+                </span>
+              </div>
+            </div>
+          </Header>
+        )}
         <MenuProvider>
-          <SideBar hidden={siderBarHidden} />
-          <Content>
-            <ContentView
-              books={books}
-              bookCovers={bookCovers}
-              bookshelfSettings={{
-                handleHideSiderBar,
-                handleDeleteBook,
-                bookshelfStyle,
-              }}
-            />
-          </Content>
+          <ContentView
+            books={books}
+            bookCovers={bookCovers}
+            bookshelfSettings={{
+              handleHideSiderBar,
+              handleDeleteBook,
+              bookshelfStyle,
+            }}
+          />
         </MenuProvider>
+        <Footer>
+          lafjlaewjfawl
+        </Footer>
       </Layout>
+
     </Layout>
   );
 };
