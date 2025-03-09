@@ -5,13 +5,20 @@
 
 .app-header {
   background-color: #edebeb;
-  max-height: 64px;
+  max-height: 20vh;
   display: flex;
   justify-content: space-between;
   padding: 10px 20px;
   box-shadow: 0 4px 10px rgba(118, 184, 223, 0.2);
 }
-
+.app-footer {
+  background-color: #edebeb;
+  max-height: 10vh;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 20px;
+  box-shadow: 0 4px 10px rgba(118, 184, 223, 0.2);
+}
 .settting-span {
   font-weight: bold;
   font-size: xx-large;

@@ -8,6 +8,7 @@ import { readFile, BaseDirectory } from "@tauri-apps/plugin-fs";
 import { getMimeType } from '../utils/FileDetector';
 
 import './Bookshelf.css';
+import { Content } from 'antd/es/layout/layout';
 const LazyBookReader = React.lazy(() => import('./BookReader'));
 
 const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
@@ -38,7 +39,7 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
 
   // 渲染书架
   return (
-    <>
+    <Content>
       {currentBook ? (
         <Suspense fallback={<Spin
           style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
@@ -116,7 +117,7 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
           )}
         </div>
       )}
-    </>
+    </Content>
   );
 };
 

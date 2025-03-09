@@ -8,17 +8,11 @@ import {
   RightCircleOutlined
 } from "@ant-design/icons";
 
-import { MenuContext } from "../contexts/MenuContext";
-
 const { Sider } = Layout;
 
-const SideBar = ({ hidden }) => {
+const SideBar = ({ handleSelectedMenu, hidden }) => {
   const [collapsed, setCollapsed] = useState(false);
-  const { setSelectedMenu } = useContext(MenuContext);
-
-  const handleMenuClick = (key) => {
-    setSelectedMenu(key.key);
-  }
+  // const { setSelectedMenu } = useContext(MenuContext);
 
   const toggleCollapsed = () => {
     setCollapsed(!collapsed);
@@ -27,7 +21,7 @@ const SideBar = ({ hidden }) => {
   return (
     <div style={{
       display: "flex",
-      height: "100vh",
+      height: "80vh",
       position: "relative", // 为 Button 定位提供参考
     }}>
       <Sider
@@ -38,7 +32,7 @@ const SideBar = ({ hidden }) => {
         <Menu
           mode="inline"
           defaultSelectedKeys={["1"]}
-          onClick={handleMenuClick}
+          onClick={handleSelectedMenu}
           items={[
             {
               key: "1",

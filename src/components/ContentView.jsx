@@ -1,8 +1,6 @@
 import React, { useContext } from "react";
-import { MenuContext } from "../contexts/MenuContext";
 import Bookshelf from "./Bookshelf";
-const ContentView = ({ books, bookCovers, bookshelfSettings }) => {
-  const { selectedMenu } = useContext(MenuContext);
+const ContentView = ({ books, bookCovers, bookshelfSettings, selectedMenu }) => {
   return (
     <>
       {selectedMenu === "1" &&

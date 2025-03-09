@@ -5,7 +5,6 @@ import { AppstoreTwoTone, ProfileTwoTone } from "@ant-design/icons";
 import CustomUpload from "./components/CustomUpload";
 import SideBar from "./components/SideBar";
 import ContentView from "./components/ContentView";
-import { MenuProvider } from "./contexts/MenuContext";
 import { readFile, BaseDirectory } from "@tauri-apps/plugin-fs";
 import { bookOperations } from "./services/BookOperations";
 
@@ -25,6 +24,7 @@ const App = () => {
   const [books, setBooks] = useState([]);
   const [bookCovers, setBookCovers] = useState({});
 
+  const [selectedMenu, setSelectedMenu] = useState("1");
 
   const loadData = async () => {
     try {
@@ -88,12 +88,12 @@ const App = () => {
   const handleResult = () => {
     setResult(!result);
   }
+  const handleSelectedMenu = (value) => {
+    setSelectedMenu(value.key);
+  }
+
   return (
     <Layout>
-      <MenuProvider>
-        <SideBar hidden={siderBarHidden} />
-      </MenuProvider>
-      <Layout>
         {headerOpen && (
           <Header className="app-header">
             <h1>Bookcase 📚</h1>
@@ -113,7 +113,8 @@ const App = () => {
             </div>
           </Header>
         )}
-        <MenuProvider>
+      <Layout>
+      <SideBar handleSelectedMenu={handleSelectedMenu} hidden={siderBarHidden} />
           <ContentView
             books={books}
             bookCovers={bookCovers}
@@ -122,12 +123,12 @@ const App = () => {
               handleDeleteBook,
               bookshelfStyle,
             }}
+            selectedMenu={selectedMenu}
           />
-        </MenuProvider>
-        <Footer>
+      </Layout>
+        <Footer className="app-footer">
           lafjlaewjfawl
         </Footer>
-      </Layout>
 
     </Layout>
   );
