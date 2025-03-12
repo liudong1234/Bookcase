@@ -31,7 +31,7 @@ const PDFRenderer = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1);
-
+  const [toolBar, setToolBar] = useState(true);
   const [readerState, setReaderState] = useState({
     currentLocation: null,
     toc: [],
@@ -120,6 +120,30 @@ const PDFRenderer = ({
       }
     };
   }, [book]);
+  
+  useEffect(() => {
+    const containerElement = viewerRef.current;
+    
+    if (!containerElement) return;
+    
+    const handleClick = (event) => {
+      // 获取当前文档的选择对象
+      const selection = window.getSelection();
+      
+      // 检查是否有文本被选中
+      if (selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed) {
+        return; // 如果有文本被选中，不切换工具栏
+      }
+      
+      setToolBar(prev => !prev);
+    }
+    containerElement.addEventListener('click', handleClick);
+    
+    return () => {
+      containerElement.removeEventListener('click', handleClick);
+    };
+  }, []);
+  
   const handleDocumentLoad = (e) => {
     const { doc } = e;
     setTotalPages(doc.numPages);
@@ -247,40 +271,42 @@ const PDFRenderer = ({
 
   return (
     <>
-      <Header
-        className="reader-header"
-        style={{
-          background: readerTheme === "light" ? "#fff" : "#1f1f1f",
-          borderBottom: "1px solid #e8e8e8",
-        }}
-      >
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={eventHandlers.onLeftClose}
-          style={{ marginRight: 16 }}
-        />
-        <h3
+      {toolBar && (
+        <Header
+          className="reader-header"
           style={{
-            margin: 0,
-            flex: 1,
-            color: readerTheme === "light" ? "#000" : "#fff",
+            background: readerTheme === "light" ? "#fff" : "#1f1f1f",
+            borderBottom: "1px solid #e8e8e8",
           }}
         >
-          {book?.name}
-        </h3>
-        <ReaderToolbar
-          readerTheme={readerTheme}
-          navigationHandlers={navigationHandlers}
-          onSettingsClick={() => updateUiState("openSettings", true)}
-          onTocClick={() => updateUiState("openToc", true)}
-          children={CustomToolbar}
-          onThemeToggle={() =>
-            updateTheme(readerTheme === "light" ? "dark" : "light")
-          }
-        >
-          <CustomToolbar />
-        </ReaderToolbar>
-      </Header>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={eventHandlers.onLeftClose}
+            style={{ marginRight: 16 }}
+          />
+          <h3
+            style={{
+              margin: 0,
+              flex: 1,
+              color: readerTheme === "light" ? "#000" : "#fff",
+            }}
+          >
+            {book?.name}
+          </h3>
+          <ReaderToolbar
+            readerTheme={readerTheme}
+            navigationHandlers={navigationHandlers}
+            onSettingsClick={() => updateUiState("openSettings", true)}
+            onTocClick={() => updateUiState("openToc", true)}
+            children={CustomToolbar}
+            onThemeToggle={() =>
+              updateTheme(readerTheme === "light" ? "dark" : "light")
+            }
+          >
+            <CustomToolbar />
+          </ReaderToolbar>
+        </Header>
+      )}
       <Content style={{ position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10 }}>
           <ReadingIndicator currentPage={currentPage} totalPages={totalPages} />

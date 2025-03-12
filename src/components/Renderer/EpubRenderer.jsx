@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Drawer, Button } from "antd";
 import { Content, Header } from "antd/es/layout/layout";
 import Epub from "epubjs";
-
+import { debounce } from 'lodash';
 import { ArrowLeftOutlined } from "@ant-design/icons";
 
 import ReaderToolbar from "./ReaderToolBar";
@@ -17,18 +17,142 @@ const EpubRenderer = ({
   viewerRef
 }) => {
   // Local state
-  
+
   const [currentChapter, setCurrentChapter] = useState('');
   const [totalChapters, setTotalChapters] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-    // Reader state
+  const [toolBar, setToolBar] = useState(true);
+  const [readerTheme, setReaderTheme] = useState('light');
+  // Reader state
   const [readerState, setReaderState] = useState({
     currentLocation: null,
     toc: [],
     rendition: null,
   });
-  
+
+  const bookRef = useRef(null);
+  //设置参数
+  const [readerSettings, setReaderSettings] = useState({
+    fontSize: 16,
+    fontFamily: "SimSun",
+    readingMode: "paginated",
+    managerMode: "default",
+    //
+  })
+
+  useEffect(() => {
+    const initBook = async () => {
+      try {
+        if (!book) return;
+
+        bookRef.current = new Epub(book);
+        await bookRef.current.ready;
+
+        const rendition = bookRef.current.renderTo(viewerRef.current, {
+          width: "100%",
+          height: "100%",
+          spread: "none",
+          flow: readerSettings.readingMode,
+          manager: readerSettings.managerMode,
+          iframe: {
+            allowScripts: true, // 允许执行脚本
+          }
+        });
+
+        // Notify parent about rendition
+        readerEventHandlers.onRenditionReady(rendition);
+        // Load and set TOC
+        const navigation = await bookRef.current.loaded.navigation;
+        readerEventHandlers.onTocChange(navigation.toc);
+        setTotalChapters(navigation.length);
+        // Restore reading progress
+        const savedCfi = localStorage.getItem(`book-progress-${book.name}`);
+        rendition.display(savedCfi || undefined);
+
+        // 在内容加载完成后绑定事件监听器
+        rendition.on('rendered', (section) => {
+          // Get all iframes (there could be multiple in continuous mode)
+          const iframes = viewerRef.current.querySelectorAll('iframe');
+          
+          // Attach click handler to each iframe's document
+          iframes.forEach(iframe => {
+            if (iframe && iframe.contentDocument) {
+              const iframeDocument = iframe.contentDocument;
+              
+              // Remove any existing click listeners to prevent duplicates
+              const oldHandler = iframe._clickHandler;
+              if (oldHandler) {
+                iframeDocument.removeEventListener('click', oldHandler);
+              }
+              
+              // Create and store a new click handler
+              const clickHandler = (event) => {
+                const selection = iframeDocument.getSelection();
+                if (selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed) {
+                  return; // Don't toggle toolbar if text is selected
+                }
+                setToolBar(prev => !prev);
+              };
+              
+              // Store the handler reference for potential cleanup
+              iframe._clickHandler = clickHandler;
+              
+              // Add the event listener
+              iframeDocument.addEventListener('click', clickHandler);
+            }
+          });
+        });
+
+        // Apply theme settings
+        applyThemeSettings(rendition);
+
+        //加载记录
+        // Set up location change listener
+        rendition.on("relocated", handleLocationChange);
+      } catch (error) {
+        console.error("Error initializing book:", error);
+        throw new Error("加载书籍失败，请重试");
+      }
+
+      // 组件卸载时销毁 EPUB 实例
+      return () => {
+        if (bookRef.current) {
+          bookRef.current.destroy();
+          
+          // Clean up any remaining event handlers
+          const iframes = viewerRef.current?.querySelectorAll('iframe');
+          if (iframes) {
+            iframes.forEach(iframe => {
+              if (iframe && iframe.contentDocument && iframe._clickHandler) {
+                iframe.contentDocument.removeEventListener('click', iframe._clickHandler);
+              }
+            });
+          }
+        }
+      };
+    };
+
+    initBook();
+
+    return () => {
+      if (bookRef.current) {
+        bookRef.current.destroy();
+      }
+    };
+  }, [book, readerSettings.readingMode, readerSettings.managerMode]);
+
+
+
+
+  // Apply theme settings when they change
+  useEffect(() => {
+    if (bookRef.current?.rendition) {
+      applyThemeSettings(bookRef.current.rendition);
+    }
+  }, [readerSettings.fontSize, readerSettings.fontFamily, readerTheme]);
+
+
   const eventHandlers = {
     onRenditionReady: (rendition) => {
       setReaderState(prev => ({ ...prev, rendition }));
@@ -42,18 +166,10 @@ const EpubRenderer = ({
     onLeftClose: onLeftCloseHandler,
   };
 
-  const [readerTheme, setReaderTheme] = useState('light');
   const updateTheme = (value) => {
     setReaderTheme(value);
   }
-  //设置参数
-  const [readerSettings, setReaderSettings] = useState({
-    fontSize: 16,
-    fontFamily: "SimSun",
-    readingMode: "paginated",
-    managerMode: "default",
-    //
-  })
+
   const updateSettings = (key, value) => {
     setReaderSettings(prev => ({
       ...prev,
@@ -73,8 +189,6 @@ const EpubRenderer = ({
     }));
   };
 
-  const bookRef = useRef(null);
-
   // Reader event handlers
   const readerEventHandlers = {
     onRenditionReady: (rendition) => {
@@ -87,71 +201,6 @@ const EpubRenderer = ({
       setReaderState((prev) => ({ ...prev, toc }));
     },
   };
-
-  useEffect(() => {
-    const initBook = async () => {
-      try {
-        if (!book) return;
-
-        bookRef.current = new Epub(book);
-        await bookRef.current.ready;
-
-        const rendition = bookRef.current.renderTo(viewerRef.current, {
-          width: "100%",
-          height: "100%",
-          spread: "none",
-          flow: readerSettings.readingMode,
-          manager: readerSettings.managerMode,
-        });
-
-        // Notify parent about rendition
-        readerEventHandlers.onRenditionReady(rendition);
-        // Load and set TOC
-        const navigation = await bookRef.current.loaded.navigation;
-        readerEventHandlers.onTocChange(navigation.toc);
-        setTotalChapters(navigation.length);
-        // Restore reading progress
-        const savedCfi = localStorage.getItem(`book-progress-${book.name}`);
-        rendition.display(savedCfi || undefined);
-
-        // Apply theme settings
-        applyThemeSettings(rendition);
-
-        //加载记录
-        // Set up location change listener
-        rendition.on("relocated", handleLocationChange);
-      } catch (error) {
-        console.error("Error initializing book:", error);
-        throw new Error("加载书籍失败，请重试");
-      }
-    };
-
-    initBook();
-
-    return () => {
-      if (bookRef.current) {
-        bookRef.current.destroy();
-      }
-    };
-  }, [book, readerSettings.readingMode, readerSettings.managerMode]);
-
-  const updateProgress = (location) => {
-    // 计算百分比进度
-    const newProgress = (location.start.percentage * 100).toFixed(1);
-    setProgress(newProgress);
-    // 计算页码
-    const currentPage = location.start.displayed.page;
-    const totalPages = location.start.displayed.total;
-    setCurrentPage(currentPage);
-    setTotalPages(totalPages);
-  };
-
-  // Apply theme settings when they change
-  useEffect(() => {
-    if (bookRef.current?.rendition) {
-      applyThemeSettings(bookRef.current.rendition);
-    }
-  }, [readerSettings.fontSize, readerSettings.fontFamily, readerTheme]);
 
   const applyThemeSettings = (rendition) => {
     rendition.themes.default({
@@ -215,38 +264,40 @@ const EpubRenderer = ({
   };
   return (
     <>
-      <Header
-        className="reader-header"
-        style={{
-          background: readerTheme === "light" ? "#fff" : "#1f1f1f",
-          borderBottom: "1px solid #e8e8e8",
-        }}
-      >
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={eventHandlers.onLeftClose}
-          style={{ marginRight: 16 }}
-        />
-        <h3
+      {toolBar && (
+        <Header
+          className="reader-header"
           style={{
-            margin: 0,
-            flex: 1,
-            color: readerTheme === "light" ? "#000" : "#fff",
+            background: readerTheme === "light" ? "#fff" : "#1f1f1f",
+            borderBottom: "1px solid #e8e8e8",
           }}
         >
-          {book?.name}
-        </h3>
-        <ReaderToolbar
-          readerTheme={readerTheme}
-          navigationHandlers={navigationHandlers}
-          onSettingsClick={() => updateUiState('openSettings', true)}
-          onTocClick={() => updateUiState('openToc', true)}
-          onThemeToggle={() => updateTheme(readerTheme === 'light' ? 'dark' : 'light')}
-        />
-      </Header>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={eventHandlers.onLeftClose}
+            style={{ marginRight: 16 }}
+          />
+          <h3
+            style={{
+              margin: 0,
+              flex: 1,
+              color: readerTheme === "light" ? "#000" : "#fff",
+            }}
+          >
+            {book?.name}
+          </h3>
+          <ReaderToolbar
+            readerTheme={readerTheme}
+            navigationHandlers={navigationHandlers}
+            onSettingsClick={() => updateUiState('openSettings', true)}
+            onTocClick={() => updateUiState('openToc', true)}
+            onThemeToggle={() => updateTheme(readerTheme === 'light' ? 'dark' : 'light')}
+          />
+        </Header>
+      )}
       <Content style={{ position: "relative", overflow: "hidden" }}>
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10 }}>
-        <ReadingIndicator currentPage={currentPage} totalPages={totalChapters} />
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10 }}>
+          <ReadingIndicator currentPage={currentPage} totalPages={totalChapters} />
         </div>
         <div ref={viewerRef} style={{ width: "100%", height: "100%" }}>
           {/* EPUB 内容将在此处渲染 */}

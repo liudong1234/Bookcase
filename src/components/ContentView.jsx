@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React from "react";
 import Bookshelf from "./Bookshelf";
 const ContentView = ({ books, bookCovers, bookshelfSettings, selectedMenu }) => {
   return (

@@ -17,6 +17,8 @@ const MarkdownRenderer = ({
   const [currentChapter, setCurrentChapter] = useState('');
   const [markdownContent, setMarkdownContent] = useState(''); // Changed to string
   const [readerTheme, setReaderTheme] = useState('light');
+  const [toolBar, setToolBar] = useState(true)
+
   const scrollTimeout = useRef(null)
   const updateTheme = (value) => {
     setReaderTheme(value);
@@ -183,6 +185,29 @@ const MarkdownRenderer = ({
     }, 500);
     eventHandlers.onRenditionReady(rendition);
   }, [book]);
+
+  useEffect(() => {
+    const containerElement = markdownRef.current;
+    
+    if (!containerElement) return;
+    
+    const handleClick = (event) => {
+      // 获取当前文档的选择对象
+      const selection = window.getSelection();
+      
+      // 检查是否有文本被选中
+      if (selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed) {
+        return; // 如果有文本被选中，不切换工具栏
+      }
+      
+      setToolBar(prev => !prev);
+    }
+    containerElement.addEventListener('click', handleClick);
+    
+    return () => {
+      containerElement.removeEventListener('click', handleClick);
+    };
+  }, []);
 
   const scrollToHeader = (headerId) => {
 
@@ -441,35 +466,38 @@ const MarkdownRenderer = ({
 
   return (
     <>
-      <Header
-        className="reader-header"
-        style={{
-          borderBottom: "1px solid #e8e8e8",
-          backgroundColor: readerTheme === 'light'?'#f5f5f5':'#373536',
-        }}
-      >
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={eventHandlers.onLeftClose}
-          style={{ marginRight: 16 }}
-        />
-        <h3
+      {toolBar && (
+        <Header
+          className="reader-header"
           style={{
-            margin: 0,
-            flex: 1,
-            color: readerTheme === "light" ? "#000" : "#fff",
+            borderBottom: "1px solid #e8e8e8",
+            backgroundColor: readerTheme === 'light'?'#f5f5f5':'#373536',
           }}
         >
-          {book?.name}
-        </h3>
-        <ReaderToolbar
-          readerTheme={readerTheme}
-          navigationHandlers={navigationHandlers}
-          onSettingsClick={() => updateUiState('openSettings', true)}
-          onTocClick={() => updateUiState('openToc', true)}
-          onThemeToggle={() => updateTheme(readerTheme === 'light' ? 'dark' : 'light')}
-        />
-      </Header>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={eventHandlers.onLeftClose}
+            style={{ marginRight: 16 }}
+          />
+          <h3
+            style={{
+              margin: 0,
+              flex: 1,
+              color: readerTheme === "light" ? "#000" : "#fff",
+            }}
+          >
+            {book?.name}
+          </h3>
+          <ReaderToolbar
+            readerTheme={readerTheme}
+            navigationHandlers={navigationHandlers}
+            onSettingsClick={() => updateUiState('openSettings', true)}
+            onTocClick={() => updateUiState('openToc', true)}
+            onThemeToggle={() => updateTheme(readerTheme === 'light' ? 'dark' : 'light')}
+          />
+        </Header>
+
+      )}
 
       <Content style={{ position: "relative", overflow: "hidden" }}>
         <div ref={viewerRef} style={{ 

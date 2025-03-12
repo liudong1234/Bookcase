@@ -57,7 +57,7 @@ const MobiRenderer = ({
       [key]: value
     }));
   };
-    // Reading mode handler
+  // Reading mode handler
   const handleModeChange = (value) => {
     let managerMode = "default";
     if (["successive", "simulation"].includes(value)) {
@@ -101,45 +101,48 @@ const MobiRenderer = ({
       loadBook();
   }, []);
 
-
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
     const handleLoad = () => {
       const contentWindow = iframe.contentWindow;
-      
+
       // 滚动监听处理
       const handleScroll = () => {
+
+        if (toolBar) {
+          setToolBar(false);
+        }
         const iframe = iframeRef.current;
         const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
         // 为所有内部链接添加点击事件
         const links = iframeDoc.querySelectorAll('a[id]');
         const nonEmptyIds = Array.from(links)
-        .map(link => link.id.replace(/\D/g, ''))
-        .filter(id => id.trim() !== ''); // 过滤空值
+          .map(link => link.id.replace(/\D/g, ''))
+          .filter(id => id.trim() !== ''); // 过滤空值
 
         clearTimeout(scrollTimeoutId.current);
         scrollTimeoutId.current = setTimeout(() => {
           const scrollY = contentWindow.scrollY;
           localStorage.setItem(`book-progress-scroll-${title}`, scrollY);
-          localStorage.setItem(`book-progress-${title}`, 'filepos:'+ nonEmptyIds[0]);
-          setCurrentChapter('filepos:'+ nonEmptyIds[0]);
+          localStorage.setItem(`book-progress-${title}`, 'filepos:' + nonEmptyIds[0]);
+          setCurrentChapter('filepos:' + nonEmptyIds[0]);
         }, 100);
       };
-  
+
       contentWindow.addEventListener('scroll', handleScroll);
-      
+
       return () => {
         contentWindow.removeEventListener('scroll', handleScroll);
       };
     };
-  
+
     iframe.addEventListener('load', handleLoad);
     // 立即处理已加载的iframe
     if (iframe.contentDocument?.readyState === 'complete') {
       handleLoad();
     }
-  
+
     return () => {
       iframe.removeEventListener('load', handleLoad);
     };
@@ -173,7 +176,6 @@ const MobiRenderer = ({
     setTimeout(() => {
       const savedScroll = localStorage.getItem(`book-progress-scroll-${title}`);
       if (savedScroll !== null) {
-        console.log("scroll", savedScroll);
         const iframeWindow = iframeRef.current?.contentWindow;
         iframeWindow.scrollTo(0, savedScroll);
       }
@@ -215,14 +217,48 @@ const MobiRenderer = ({
     }
   }, [readerSettings.fontSize, readerSettings.fontFamily, readerTheme]);
 
+  const handleIframeLoad = () => {
+    setTimeout(() => {
+      try {
+        const iframe = iframeRef.current; // 添加这一行
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        const script = iframeDoc.createElement('script');
+        script.textContent = `
+          document.addEventListener('click', function(e) {
+            // 检查是否有文本被选中
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed) {
+              return;
+            }
+            // 向父窗口发送消息
+            window.parent.postMessage({ type: 'toggleToolbar' }, '*');
+          });
+        `;
+        iframeDoc.body.appendChild(script);
+      } catch (error) {
+        console.error("无法访问iframe内容:", error);
+      }
+    }, 500);
+  };
+  
+  // 在父窗口监听消息
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data.type === 'toggleToolbar') {
+        setToolBar(prev => !prev);
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   const applyThemeSettings = () => {
     const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
     const body = iframeDoc.body;
     body.style.fontSize = `${readerSettings.fontSize}px`;
     body.style.fontFamily = readerSettings.fontFamily;
   };
-
-
   // 导航到指定href
   const navigateToHref = (href) => {
     if (!mobibook || !href) return;
@@ -310,18 +346,18 @@ const MobiRenderer = ({
       }
 
       <Content style={{ position: "relative", overflow: "hidden" }}>
-        <ReadingIndicator currentPage={currentSectionIndex} totalPages={totalPages}/>
-        <div ref={viewerRef} className="mobi-iframe-container">
+        <ReadingIndicator currentPage={currentSectionIndex} totalPages={totalPages} />
+        <div ref={viewerRef} className="mobi-iframe-container" >
           {sectionUrl && (
             <iframe
               ref={iframeRef}
               src={sectionUrl}
               title={`Section ${currentSectionIndex + 1}`}
               className="mobi-content-iframe"
-              sandbox="allow-same-origin allow-scripts"
+              sandbox="allow-same-origin allow-scripts allow-forms"
+              onLoad={handleIframeLoad}
             />
           )}
-
         </div>
       </Content>
       <Drawer

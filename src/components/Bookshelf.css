@@ -1,7 +1,7 @@
 /* Bookshelf.css */
 .bookshelf-container {
-    max-height: 75vh;
-    overflow-y: auto;
+    /* max-height: 80vh; */
+    overflow: auto;
 }
 
 .book-grid {
@@ -94,6 +94,7 @@
     padding-left: 15px;
     cursor: pointer;
 }
+
 .ant-list-item {
     padding-top: 10px;
 }
@@ -112,7 +113,29 @@
     0% {
         transform: translate(-50%, -50%) rotateY(0deg);
     }
+
     100% {
         transform: translate(-50%, -50%) rotateY(360deg);
     }
+}
+
+/* 滚动条 */
+.ant-layout-content::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    /* 如果需要自定义水平滚动条 */
+}
+
+.ant-layout-content::-webkit-scrollbar-track {
+    background: #e0e0e0;
+}
+
+.ant-layout-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #ffffff, #666463);
+    /* 渐变色 */
+    border-radius: 4px;
+}
+
+.ant-layout-content::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #666463, #ffffff);
 }

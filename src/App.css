@@ -2,22 +2,35 @@
 .ant-layout-header {
   line-height: 0;
 }
+.ant-layout {
+  height: 100vh;
+}
 
 .app-header {
   background-color: #edebeb;
-  max-height: 20vh;
+  height: 64px;
+  /* max-height: 10vh; */
   display: flex;
   justify-content: space-between;
   padding: 10px 20px;
   box-shadow: 0 4px 10px rgba(118, 184, 223, 0.2);
 }
+
+.ant-layout-footer {
+  padding-top: 0px;
+  padding-right: 10px;
+  padding-left: 10px;
+  padding-bottom: 10px;
+}
+
 .app-footer {
-  background-color: #edebeb;
-  max-height: 10vh;
+  background-color: #ffffff;
   display: flex;
+  height: 48px;
   justify-content: space-between;
-  padding: 10px 20px;
-  box-shadow: 0 4px 10px rgba(118, 184, 223, 0.2);
+  /* z-index: 99; */
+  align-items: center; 
+  justify-content: flex-end;
 }
 .settting-span {
   font-weight: bold;

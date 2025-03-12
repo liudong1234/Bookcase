@@ -10,24 +10,21 @@ import {
 
 const { Sider } = Layout;
 
-const SideBar = ({ handleSelectedMenu, hidden }) => {
+const SideBar = ({ handleSelectedMenu }) => {
   const [collapsed, setCollapsed] = useState(false);
-  // const { setSelectedMenu } = useContext(MenuContext);
 
   const toggleCollapsed = () => {
     setCollapsed(!collapsed);
   };
 
   return (
-    <div style={{
-      display: "flex",
-      height: "80vh",
-      position: "relative", // 为 Button 定位提供参考
-    }}>
+    <>
       <Sider
-        hidden={hidden}
         collapsed={collapsed}
         theme="light"
+        style={{
+          display: "flex",
+        }}
       >
         <Menu
           mode="inline"
@@ -71,7 +68,7 @@ const SideBar = ({ handleSelectedMenu, hidden }) => {
           {collapsed ? <RightCircleOutlined /> : <LeftCircleOutlined />}
         </Button>
       </Sider>
-    </div>
+    </>
   );
 };
 

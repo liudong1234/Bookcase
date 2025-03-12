@@ -1,31 +1,29 @@
-import React, { useEffect, useState } from "react";
-import { Layout, message } from "antd";
-import { AppstoreTwoTone, ProfileTwoTone } from "@ant-design/icons";
-
+import React, { useEffect, useState, Suspense } from "react";
+import { Layout, message, Spin, Switch } from "antd";
+import { AppstoreTwoTone, ProfileTwoTone,SunFilled, MoonFilled } from "@ant-design/icons";
 import CustomUpload from "./components/CustomUpload";
 import SideBar from "./components/SideBar";
 import ContentView from "./components/ContentView";
 import { readFile, BaseDirectory } from "@tauri-apps/plugin-fs";
 import { bookOperations } from "./services/BookOperations";
-
 import "./App.css";
 
-const { Header, Content, Footer } = Layout;
+const { Header, Footer } = Layout;
 
+const LazyBookReader = React.lazy(() => import('./components/BookReader'));
 
 const App = () => {
-  // const [bookfile, setBookfile] = useState(null);
   // ui控制
   const [siderBarHidden, setSiderBarHidden] = useState(false);
   const [bookshelfStyle, setBookshelfStyle] = useState(false);
-  const [headerOpen, setHeaderOpen] = useState(true);
   const [result, setResult] = useState(false);
   //书籍信息
   const [books, setBooks] = useState([]);
   const [bookCovers, setBookCovers] = useState({});
 
   const [selectedMenu, setSelectedMenu] = useState("1");
-
+  const [selectedBook, setSelectedBook] = useState();
+  const [theme, setTheme] = useState('light');
   const loadData = async () => {
     try {
       // debugger;
@@ -63,12 +61,13 @@ const App = () => {
     loadData();
   }, [result]);
 
-  //
+  const toggleTheme = (checked) => {
+    setTheme(checked ? "dark" : "light");
+  };
   const changeBookshelfStyle = () => {
     setBookshelfStyle(!bookshelfStyle); //false格子， true列表
   };
   const handleHideSiderBar = (value) => {
-    setHeaderOpen(!value);
     setSiderBarHidden(value);
   };
   const handleDeleteBook = async (bookId) => {
@@ -91,45 +90,70 @@ const App = () => {
   const handleSelectedMenu = (value) => {
     setSelectedMenu(value.key);
   }
-
+  const handleSelectedBook = (book) => {
+    setSelectedBook(book)
+  }
   return (
     <Layout>
-        {headerOpen && (
-          <Header className="app-header">
-            <h1>Bookcase 📚</h1>
-            <div style={{ display: "flex", alignItems: "center", gap: "30px" }}>
-              <div>
-                <CustomUpload books={books} onResult={handleResult} />
-              </div>
-              <div>
-                <span
-                  className="settting-span"
-                  onClick={() => changeBookshelfStyle()}
-                >
-                  {bookshelfStyle && <AppstoreTwoTone />}
-                  {!bookshelfStyle && <ProfileTwoTone />}
-                </span>
-              </div>
+      {!siderBarHidden && (
+        <Header className="app-header">
+          <h1>Bookcase📚</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "30px" }}>
+            <div>
+              <CustomUpload books={books} onResult={handleResult} />
             </div>
-          </Header>
-        )}
-      <Layout>
-      <SideBar handleSelectedMenu={handleSelectedMenu} hidden={siderBarHidden} />
+            <div className="theme-toggle">
+              <Switch
+                checked={theme === "dark"}
+                onChange={toggleTheme}
+                checkedChildren={<SunFilled />}
+                unCheckedChildren={<MoonFilled />}
+              />
+            </div>
+          </div>
+        </Header>
+      )}
+      {!siderBarHidden && (
+        <Layout>
+          <SideBar handleSelectedMenu={handleSelectedMenu} />
           <ContentView
             books={books}
             bookCovers={bookCovers}
             bookshelfSettings={{
               handleHideSiderBar,
               handleDeleteBook,
+              handleSelectedBook,
               bookshelfStyle,
             }}
             selectedMenu={selectedMenu}
           />
-      </Layout>
+        </Layout>
+      )}
+      {!siderBarHidden && (
         <Footer className="app-footer">
-          lafjlaewjfawl
+          <div>
+              <span
+                className="settting-span"
+                onClick={() => changeBookshelfStyle()}
+              >
+                {bookshelfStyle && <AppstoreTwoTone />}
+                {!bookshelfStyle && <ProfileTwoTone />}
+              </span>
+            </div>
         </Footer>
+      )}
+      {/* 阅读内容 */}
+      {selectedBook && (
+        <Suspense fallback={<Spin
+          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+          size="large" />}>
+          <LazyBookReader
+            book={selectedBook}
+            onClose={() => { setSelectedBook(null); setSiderBarHidden(false); }}
+          />
+        </Suspense>
 
+      )}
     </Layout>
   );
 };
