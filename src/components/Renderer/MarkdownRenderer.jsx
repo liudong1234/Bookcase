@@ -83,7 +83,10 @@ const MarkdownRenderer = ({
     fontFamily: "SimSun",
     readingMode: "paginated",
     managerMode: "default",
-    //
+    //其他
+    pageMargin: 5,
+    lineSpacing: 5,
+    alignment: "center",
   })
   const updateSettings = (key, value) => {
     setReaderSettings(prev => ({
@@ -152,6 +155,7 @@ const MarkdownRenderer = ({
     if (markdownRef.current) {
       markdownRef.current.style.fontSize = `${readerSettings.fontSize}px`;
       markdownRef.current.style.fontFamily = readerSettings.fontFamily;
+      markdownRef.current.style.lineHeight = readerSettings.lineSpacing;
       markdownRef.current.style.color = readerTheme === "light" ? "#000" : "#fff";
     }
     eventHandlers.onRenditionReady(rendition);

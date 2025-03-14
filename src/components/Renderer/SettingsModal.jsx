@@ -1,5 +1,6 @@
 import { Select, Row, Modal, Col, Slider, InputNumber, theme } from "antd";
-import {ConfigProvider} from "antd";
+import { AlignCenterOutlined, AlignRightOutlined, AlignLeftOutlined } from "@ant-design/icons";
+import { ConfigProvider } from "antd";
 const SettingsModal = ({
   readerTheme,
   open,
@@ -39,11 +40,11 @@ const SettingsModal = ({
         }}
       >
         <Row>
-          <span style={{ 
+          <span style={{
             fontSize: "14px", marginRight: "10px", marginTop: '5px',
             color: readerTheme === "light" ? "#000" : "#fff",
           }}>
-            阅读模式
+            阅读方式
           </span>
           <Select
             defaultValue="平滑"
@@ -67,8 +68,9 @@ const SettingsModal = ({
             ]}
           />
         </Row>
+
         <Row>
-          <span style={{ 
+          <span style={{
             fontSize: "14px", marginRight: "10px", marginTop: '5px',
             color: readerTheme === "light" ? "#000" : "#fff",
           }}>字体</span>
@@ -87,9 +89,7 @@ const SettingsModal = ({
               { label: "隶书", value: "LiSu" },
             ]}
           />
-        </Row>
-        <Row>
-          <Col span={12}>
+          <Col span={10}>
             <Slider
               min={12}
               max={50}
@@ -106,6 +106,64 @@ const SettingsModal = ({
               onChange={(value) => onSettingChange("fontSize", value)}
             />
           </Col>
+        </Row>
+
+        <Row>
+          <span style={{
+            fontSize: "14px", marginRight: "10px", marginTop: '5px',
+            color: readerTheme === "light" ? "#000" : "#fff",
+          }}>页边距</span>
+          <Col span={10}>
+            <Slider
+              min={12}
+              max={50}
+              value={12}
+              onChange={() => {}}
+            />
+          </Col>
+          <Col span={4}>
+            <InputNumber
+              min={12}
+              max={50}
+              style={{ margin: "0 16px" }}
+              value={12}
+              onChange={() => {}}
+            />
+          </Col>
+        </Row>
+
+        <Row>
+          <span style={{
+            fontSize: "14px", marginRight: "10px", marginTop: '5px',
+            color: readerTheme === "light" ? "#000" : "#fff",
+          }}>行间距</span>
+          <Col span={10}>
+            <Slider
+              min={0}
+              max={20}
+              value={settings.lineSpacing}
+              onChange={(value) => onSettingChange("lineSpacing", value)}
+            />
+          </Col>
+          <Col span={4}>
+            <InputNumber
+              min={0}
+              max={20}
+              style={{ margin: "0 16px" }}
+              value={settings.lineSpacing}
+              onChange={(value) => onSettingChange("lineSpacing", value)}
+            />
+          </Col>
+        </Row>
+
+        <Row>
+          <span style={{
+            fontSize: "14px", marginRight: "10px", marginTop: '5px',
+            color: readerTheme === "light" ? "#000" : "#fff",
+          }}>对齐方式</span>
+          <Col style={{ marginRight: '8px', fontSize: "20px" }}><AlignLeftOutlined /></Col>
+          <Col style={{ marginRight: '8px', fontSize: "20px" }}><AlignCenterOutlined /></Col>
+          <Col style={{ marginRight: '8px', fontSize: "20px" }}><AlignRightOutlined /></Col>
         </Row>
       </Modal>
     </ConfigProvider>
