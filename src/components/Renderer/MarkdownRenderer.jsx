@@ -473,10 +473,6 @@ const MarkdownRenderer = ({
       {toolBar && (
         <Header
           className="reader-header"
-          style={{
-            borderBottom: "1px solid #e8e8e8",
-            backgroundColor: readerTheme === 'light'?'#f5f5f5':'#373536',
-          }}
         >
           <Button
             icon={<ArrowLeftOutlined />}
@@ -487,7 +483,6 @@ const MarkdownRenderer = ({
             style={{
               margin: 0,
               flex: 1,
-              color: readerTheme === "light" ? "#000" : "#fff",
             }}
           >
             {book?.name}

@@ -272,13 +272,7 @@ const PDFRenderer = ({
   return (
     <>
       {toolBar && (
-        <Header
-          className="reader-header"
-          style={{
-            background: readerTheme === "light" ? "#fff" : "#1f1f1f",
-            borderBottom: "1px solid #e8e8e8",
-          }}
-        >
+        <Header className="reader-header" >
           <Button
             icon={<ArrowLeftOutlined />}
             onClick={eventHandlers.onLeftClose}
@@ -288,7 +282,6 @@ const PDFRenderer = ({
             style={{
               margin: 0,
               flex: 1,
-              color: readerTheme === "light" ? "#000" : "#fff",
             }}
           >
             {book?.name}
@@ -387,9 +380,9 @@ const PDFRenderer = ({
             {(props) =>
               <Button
                 style={{
-                  backgroundColor: props.isSelected ? '#357edd' : 'transparent',
-                  borderColor: props.isSelected ? 'transparent' : '#357edd',
-                  color: props.isSelected ? '#fff' : '#000',
+                  // backgroundColor: props.isSelected ? '#357edd' : 'transparent',
+                  borderColor: props.isSelected ? '#357edd' : 'transparent',
+                  // color: props.isSelected ? '#fff' : '#000',
 
                   borderRadius: '4px',
                   borderStyle: 'solid',
@@ -404,9 +397,9 @@ const PDFRenderer = ({
             {(props) =>
               <Button
                 style={{
-                  backgroundColor: props.isSelected ? '#357edd' : 'transparent',
-                  borderColor: props.isSelected ? 'transparent' : '#357edd',
-                  color: props.isSelected ? '#fff' : '#000',
+                  // backgroundColor: props.isSelected ? '#357edd' : 'transparent',
+                  borderColor: props.isSelected ? '#357edd' : 'transparent',
+                  // color: props.isSelected ? '#fff' : '#000',
 
                   borderRadius: '4px',
                   borderStyle: 'solid',

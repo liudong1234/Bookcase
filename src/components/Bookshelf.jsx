@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { Card, Avatar, List, Button, Empty } from 'antd';
-import { StarTwoTone } from '@ant-design/icons';
+import { StarFilled } from '@ant-design/icons';
 const { Meta } = Card;
 
 import { readFile, BaseDirectory } from "@tauri-apps/plugin-fs";
-// import BookReader from './BookReader';
 import { getMimeType } from '../utils/FileDetector';
 
 import './Bookshelf.css';
@@ -87,7 +86,7 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
                   <List.Item onClick={() => { handleClickBook(item); handleHideSiderBar(true); }}
                     actions={[
                       <Button onClick={(event) => { event.stopPropagation(); handleDeleteBook(item.id) }}>删除书籍</Button>,
-                      <span style={{ fontSize: "20px" }}><StarTwoTone onClick={(event) => { event.stopPropagation(); }} /></span>
+                      <span style={{ fontSize: "20px" }}><StarFilled onClick={(event) => { event.stopPropagation(); }} /></span>
                     ]}>
                     <List.Item.Meta
                       avatar={<Avatar src={bookCovers[item.id]} />}

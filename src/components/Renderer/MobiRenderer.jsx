@@ -313,13 +313,7 @@ const MobiRenderer = ({
     <>
       {
         toolBar && (
-          <Header
-            className="reader-header"
-            style={{
-              background: readerTheme === "light" ? "#fff" : "#1f1f1f",
-              borderBottom: "1px solid #e8e8e8",
-            }}
-          >
+          <Header className="reader-header" >
             <Button
               icon={<ArrowLeftOutlined />}
               onClick={eventHandlers.onLeftClose}
@@ -329,7 +323,6 @@ const MobiRenderer = ({
               style={{
                 margin: 0,
                 flex: 1,
-                color: readerTheme === "light" ? "#000" : "#fff",
               }}
             >
               {title}
