@@ -5,6 +5,9 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import { theme } from 'antd';
+const { useToken } = theme;
+
 
 import MenuTocItem, { getItemKey } from "./MenuTocItem";
 import ReaderToolbar from "./ReaderToolBar";
@@ -13,15 +16,23 @@ const MarkdownRenderer = ({
   book,
   onLeftCloseHandler,
   viewerRef,
+  customThemeHandler,
 }) => {
   const [currentChapter, setCurrentChapter] = useState('');
   const [markdownContent, setMarkdownContent] = useState(''); // Changed to string
   const [readerTheme, setReaderTheme] = useState('light');
   const [toolBar, setToolBar] = useState(true)
+  const { token } = useToken();
 
   const scrollTimeout = useRef(null)
   const updateTheme = (value) => {
     setReaderTheme(value);
+    if (value == "dark"){
+      customThemeHandler(true);
+    }
+    else{
+      customThemeHandler(false);
+    }
   }
   const [readerState, setReaderState] = useState({
     currentLocation: null,
@@ -156,15 +167,14 @@ const MarkdownRenderer = ({
       markdownRef.current.style.fontSize = `${readerSettings.fontSize}px`;
       markdownRef.current.style.fontFamily = readerSettings.fontFamily;
       markdownRef.current.style.lineHeight = readerSettings.lineSpacing;
-      markdownRef.current.style.color = readerTheme === "light" ? "#000" : "#fff";
+      markdownRef.current.style.color = token.colorText;
     }
     eventHandlers.onRenditionReady(rendition);
   }, [readerSettings]);
   
   useEffect(() => {
     if (markdownRef.current) {
-      markdownRef.current.style.backgroundColor = readerTheme === "light" ? "#fff" : "#000";
-      markdownRef.current.style.color = readerTheme === "light" ? "#000" : "#fff";
+      markdownRef.current.style.color = token.colorText;
     }
   }, [readerTheme])
 
@@ -501,8 +511,7 @@ const MarkdownRenderer = ({
       <Content style={{ position: "relative", overflow: "hidden" }}>
         <div ref={viewerRef} style={{ 
           width: "100%", height: "100%", 
-          padding: "16px", overflowY: "auto", 
-          background: readerTheme === "light" ? "#fff" : "#1f1f1f",
+          padding: "16px", overflowY: "auto",
         }}>
           <div ref={markdownRef}>
             <ReactMarkdown
@@ -521,10 +530,6 @@ const MarkdownRenderer = ({
         open={uiState.openToc}
         onClose={() => handleTocClose()}
         width={300}
-        style={{
-          background: readerTheme === "light" ? "#fff" : "#1f1f1f",
-          color: readerTheme == 'light' ? "#1f1f1f" : "#fff",
-        }}
       >
         <div
           className="toc-list"
@@ -543,7 +548,6 @@ const MarkdownRenderer = ({
         </div>
       </Drawer>
       <SettingsModal
-        readerTheme={readerTheme}
         open={uiState.openSettings}
         settings={readerSettings}
         onSettingChange={updateSettings}

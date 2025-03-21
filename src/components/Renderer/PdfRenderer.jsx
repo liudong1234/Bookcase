@@ -26,6 +26,7 @@ const PDFRenderer = ({
   book,
   onLeftCloseHandler,
   viewerRef,
+  customThemeHandler,
 }) => {
   const [pdfUrl, setPdfUrl] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,6 +41,12 @@ const PDFRenderer = ({
   const [readerTheme, setReaderTheme] = useState("light");
   const updateTheme = (value) => {
     setReaderTheme(value);
+    if (value == "dark"){
+      customThemeHandler(true);
+    }
+    else{
+      customThemeHandler(false);
+    }
   };
   const [uiState, setUiState] = useState({
     isFullscreen: false, // 全屏
@@ -52,20 +59,6 @@ const PDFRenderer = ({
       [key]: value,
     }));
   };
-  //设置参数
-  const [readerSettings, setReaderSettings] = useState({
-    fontSize: 16,
-    fontFamily: "SimSun",
-    readingMode: "paginated",
-    managerMode: "default",
-    //
-  });
-  const updateSettings = (key, value) => {
-    setReaderSettings((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
 
   // 初始化插件
   const pageNavigationPluginInstance = pageNavigationPlugin();
@@ -73,7 +66,7 @@ const PDFRenderer = ({
   const scrollModePluginInstance = scrollModePlugin();
   const bookmarkPluginInstance = bookmarkPlugin();
 
-  const { jumpToPage, getPagesContainer, CurrentPageLabel } = pageNavigationPluginInstance;
+  const { jumpToPage, } = pageNavigationPluginInstance;
   const { SwitchScrollMode } = scrollModePluginInstance;
 
   const MAX_SCALE = 5; // 设置最大缩放倍数，可以根据需求调整
@@ -144,6 +137,24 @@ const PDFRenderer = ({
     };
   }, []);
   
+  useEffect(() => {
+    setTimeout(() => {
+      
+      // 找到所有具有指定 class 的元素
+      const elements = document.querySelectorAll('.rpv-bookmark__title');
+      
+      // 为每个元素添加样式
+      elements.forEach((element) => {
+        element.style.color = readerTheme === 'dark' ? '#ffffff' : '#000000'; // 设置文本颜色为红色
+      });
+      
+      const elements2 = document.querySelectorAll('.rpv-bookmark__toggle');
+      elements2.forEach((element) => {
+        element.style.color = readerTheme === 'dark' ? '#ffffff' : '#000000'; // 设置文本颜色为红色
+      });
+    }, 100);
+  }, [uiState.openToc]); // 空依赖数组，表示仅在组件挂载时执行
+
   const handleDocumentLoad = (e) => {
     const { doc } = e;
     setTotalPages(doc.numPages);
@@ -256,14 +267,6 @@ const PDFRenderer = ({
     </Space>
   );
 
-  const themeStyles = {
-    viewer: {
-      backgroundColor: readerTheme === "light" ? "#ffffff" : "#1f1f1f",
-      color: readerTheme === "light" ? "#000000" : "#ffffff",
-      fontSize: `${readerSettings.fontSize}px`,
-      fontFamily: readerSettings.fontFamily,
-    },
-  };
   const handleTocClose = () => {
     setUiState("openToc", false);
   };
@@ -324,7 +327,6 @@ const PDFRenderer = ({
                       bookmarkPluginInstance,
                     ]}
                     defaultScale={SpecialZoomLevel.PageWidth}
-                    theme={themeStyles}
                     onDocumentLoad={handleDocumentLoad}
                     onPageChange={(e) => handlePageChange(e.currentPage)}
                     onZoom={(e) => setScale(e.scale)}
@@ -359,8 +361,8 @@ const PDFRenderer = ({
         mask={'true'}
         styles={{
           body: {
-            background: readerTheme === "light" ? "#fff" : "#1f1f1f",
-            color: readerTheme === "light" ? "#000" : "#fff",
+            paddingTop: 5, paddingBottom: 5, paddingLeft: 0, paddingRight: 0,
+            height: 'calc(100% - 105px)', overflow: 'hidden' 
           },
         }}
       >

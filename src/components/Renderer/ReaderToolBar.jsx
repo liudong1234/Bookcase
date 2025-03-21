@@ -4,8 +4,6 @@ import {
   MenuOutlined,
   ArrowLeftOutlined,
   ArrowRightOutlined,
-  FullscreenOutlined,
-  FullscreenExitOutlined,
   SettingTwoTone,
 } from "@ant-design/icons";
 
@@ -44,11 +42,9 @@ const ReaderToolbar = ({
       <Tooltip title="切换主题">
         <div className="theme-selector">
           <Select
-            defaultValue="light"
+            defaultValue={readerTheme}
             style={{
               width: 130,
-              background: readerTheme.color,
-              color: readerTheme.text,
             }}
             onChange={handleThemeChange}
           >

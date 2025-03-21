@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Drawer, Button } from "antd";
 import { Content, Header } from "antd/es/layout/layout";
-
 import { ArrowLeftOutlined } from "@ant-design/icons";
+import { theme } from 'antd';
+const { useToken } = theme;
 
 import ReaderToolbar from "./ReaderToolBar";
 import SettingsModal from "./SettingsModal";
@@ -17,7 +18,8 @@ import '../BookReader.css'
 const MobiRenderer = ({
   book,
   onLeftCloseHandler,
-  viewerRef
+  viewerRef,
+  customThemeHandler,
 }) => {
   const [mobibook, setMobiBook] = useState();
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
@@ -27,7 +29,7 @@ const MobiRenderer = ({
   const [title, setTitle] = useState('');
   const [toolBar, setToolBar] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
-  const [extraToc, setExtraToc] = useState([]);
+  const { token } = useToken();
   const [readerState, setReaderState] = useState({
     currentLocation: null,
     toc: [],
@@ -57,6 +59,16 @@ const MobiRenderer = ({
       [key]: value
     }));
   };
+  const updateTheme = (value) => {
+    setReaderTheme(value);
+    if (value == "dark"){
+      customThemeHandler(true);
+    }
+    else{
+      customThemeHandler(false);
+    }
+  }
+
   // Reading mode handler
   const handleModeChange = (value) => {
     let managerMode = "default";
@@ -81,6 +93,17 @@ const MobiRenderer = ({
   const bookRef = useRef(null);
   const scrollTimeoutId = useRef(null);
 
+  const loadSection = async () => {
+    if (!mobibook || !mobibook.sections || !mobibook.sections[currentSectionIndex]) return;
+
+    try {
+      const url = await mobibook.sections[currentSectionIndex].load();
+      setSectionUrl(url);
+    } catch (e) {
+      console.error('Error loading section:', e);
+    }
+  };
+
   useEffect(() => {
     const loadBook = async () => {
       try {
@@ -99,6 +122,21 @@ const MobiRenderer = ({
     }
     if (book)
       loadBook();
+
+    if (mobibook) {
+      loadSection();
+    }
+
+    const handleMessage = (event) => {
+      if (event.data.type === 'toggleToolbar') {
+        setToolBar(prev => !prev);
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+
+
   }, []);
 
   useEffect(() => {
@@ -150,21 +188,10 @@ const MobiRenderer = ({
 
   // 加载章节内容
   useEffect(() => {
-    const loadSection = async () => {
-      if (!mobibook || !mobibook.sections || !mobibook.sections[currentSectionIndex]) return;
-
-      try {
-        const url = await mobibook.sections[currentSectionIndex].load();
-        setSectionUrl(url);
-      } catch (e) {
-        console.error('Error loading section:', e);
-      }
-    };
-
     if (mobibook) {
       loadSection();
     }
-  }, [mobibook, currentSectionIndex]);
+  }, [currentSectionIndex]);
 
   useEffect(() => {
     const savedSection = localStorage.getItem(`book-progress-${title}`);
@@ -235,30 +262,25 @@ const MobiRenderer = ({
           });
         `;
         iframeDoc.body.appendChild(script);
+        applyThemeSettings();
       } catch (error) {
         console.error("无法访问iframe内容:", error);
       }
     }, 500);
   };
-  
-  // 在父窗口监听消息
-  useEffect(() => {
-    const handleMessage = (event) => {
-      if (event.data.type === 'toggleToolbar') {
-        setToolBar(prev => !prev);
-      }
-    };
-    
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
+
 
   const applyThemeSettings = () => {
-    const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
-    const body = iframeDoc.body;
-    body.style.fontSize = `${readerSettings.fontSize}px`;
-    body.style.fontFamily = readerSettings.fontFamily;
+    if (iframeRef.current) {
+      const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
+      const body = iframeDoc.body;
+      body.style.fontSize = `${readerSettings.fontSize}px`;
+      body.style.fontFamily = readerSettings.fontFamily;
+      body.style.background = token.colorBgContainer;
+      body.style.color = token.colorText;
+    }
   };
+
   // 导航到指定href
   const navigateToHref = (href) => {
     if (!mobibook || !href) return;
@@ -359,9 +381,6 @@ const MobiRenderer = ({
         open={uiState.openToc}
         onClose={() => handleTocClose()}
         width={300}
-        styles={{
-          background: readerTheme === "light" ? "#fff" : "#1f1f1f",
-        }}
         className="my-toc-drawer"
       >
         <div
@@ -369,7 +388,6 @@ const MobiRenderer = ({
           style={{
             height: "100%",
             overflow: "auto",
-            background: readerTheme === "light" ? "#fff" : "#1f1f1f",
           }}
         >
           {readerState.toc.map((item, index) => (
@@ -386,7 +404,6 @@ const MobiRenderer = ({
       </Drawer>
 
       <SettingsModal
-        readerTheme={readerTheme}
         open={uiState.openSettings}
         settings={readerSettings}
         onSettingChange={updateSettings}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, Suspense } from "react";
 import { Layout, message, Spin, Switch, ConfigProvider } from "antd";
 import antdTheme from "antd/es/theme";
-import { Dropdown, Space } from "antd";
+
 import {
   AppstoreTwoTone,
   ProfileTwoTone,
@@ -16,29 +16,9 @@ import { readFile, BaseDirectory } from "@tauri-apps/plugin-fs";
 const { Header, Footer } = Layout;
 
 import { bookOperations } from "./services/BookOperations";
+import Settings from "./components/Settings";
 import "./App.css";
 const LazyBookReader = React.lazy(() => import("./components/BookReader"));
-
-const items = [
-  {
-    key: "1",
-    label: <a>文件存储位置</a>,
-  },
-  {
-    key: "2",
-    label: <a>说明</a>,
-    icon: <SettingTwoTone />,
-  },
-  {
-    key: "3",
-    label: <a>关于</a>,
-  },
-  {
-    key: "4",
-    danger: true,
-    label: "清除所有数据",
-  },
-];
 
 const App = () => {
   // ui控制
@@ -120,6 +100,11 @@ const App = () => {
   const handleSelectedBook = (book) => {
     setSelectedBook(book);
   };
+
+  const handleCustomTheme = (value) => {
+    setIsDark(value);
+  }
+
   return (
     <ConfigProvider
       theme={{ 
@@ -148,19 +133,7 @@ const App = () => {
                   unCheckedChildren={<MoonFilled />}
                 />
               </div>
-              <div className="settings">
-                <Dropdown
-                  menu={{
-                    items,
-                  }}
-                >
-                  <a onClick={(e) => e.preventDefault()}>
-                    <Space>
-                      <SettingTwoTone />
-                    </Space>
-                  </a>
-                </Dropdown>
-              </div>
+              <Settings />
             </div>
           </Header>
         )}
@@ -213,6 +186,7 @@ const App = () => {
                 setSelectedBook(null);
                 setSiderBarHidden(false);
               }}
+              customThemeHandler={handleCustomTheme}
             />
           </Suspense>
         )}

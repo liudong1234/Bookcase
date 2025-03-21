@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { Drawer, Button } from "antd";
 import { Content, Header } from "antd/es/layout/layout";
 import Epub from "epubjs";
-import { debounce } from 'lodash';
 import { ArrowLeftOutlined } from "@ant-design/icons";
 
 import ReaderToolbar from "./ReaderToolBar";
@@ -11,19 +10,23 @@ import MenuTocItem from "./MenuTocItem";
 import { getItemKey } from "./MenuTocItem";
 import ReadingIndicator from "../../utils/ReadingIndicator";
 
+import { theme } from 'antd';
+const { useToken } = theme;
+
 const EpubRenderer = ({
   book,
   onLeftCloseHandler,
-  viewerRef
+  viewerRef,
+  customThemeHandler,
 }) => {
   // Local state
 
   const [currentChapter, setCurrentChapter] = useState('');
   const [totalChapters, setTotalChapters] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
   const [toolBar, setToolBar] = useState(true);
   const [readerTheme, setReaderTheme] = useState('light');
+  const { token } = useToken();
   // Reader state
   const [readerState, setReaderState] = useState({
     currentLocation: null,
@@ -168,6 +171,12 @@ const EpubRenderer = ({
 
   const updateTheme = (value) => {
     setReaderTheme(value);
+    if (value == "dark"){
+      customThemeHandler(true);
+    }
+    else{
+      customThemeHandler(false);
+    }
   }
 
   const updateSettings = (key, value) => {
@@ -207,8 +216,8 @@ const EpubRenderer = ({
       body: {
         "font-size": `${readerSettings.fontSize}px !important`,
         "font-family": readerSettings.fontFamily,
-        "background-color": readerTheme === "light" ? "#fff" : "#1f1f1f",
-        color: readerTheme === "light" ? "#000" : "#fff",
+        "background-color": token.colorBgContainer,
+        "color": token.colorText,
       },
     });
   };
@@ -312,7 +321,7 @@ const EpubRenderer = ({
           style={{
             height: "100%",
             overflow: "auto",
-            background: readerTheme === "light" ? "#fff" : "#1f1f1f",
+            // background: readerTheme === "light" ? "#fff" : "#1f1f1f",
           }}
         >
           {readerState.toc.map((item, index) => (
@@ -329,7 +338,6 @@ const EpubRenderer = ({
       </Drawer>
 
       <SettingsModal
-        readerTheme={readerTheme}
         open={uiState.openSettings}
         settings={readerSettings}
         onSettingChange={updateSettings}

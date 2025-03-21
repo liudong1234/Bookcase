@@ -14,7 +14,7 @@ const RENDERERS = {
   mobi: MobiRenderer,
 };
 
-const BookReader = ({ book, onClose }) => {
+const BookReader = ({ book, onClose, customThemeHandler }) => {
   const viewerRef = useRef(null);
   // Get the appropriate renderer based on file type
   const getRenderer = () => {
@@ -28,6 +28,7 @@ const BookReader = ({ book, onClose }) => {
         book={book}
         viewerRef={viewerRef}
         onLeftCloseHandler={onClose}
+        customThemeHandler={customThemeHandler}
       />
     );
   };
@@ -37,7 +38,6 @@ const BookReader = ({ book, onClose }) => {
       className="reader-layout"
       style={{
         height: "100vh",
-        background: "#fff",
       }}
     >
       { getRenderer() }

@@ -181,7 +181,6 @@ ul.toc-level-2 {
 
 .mobi-info-item {
   margin-bottom: 0.5rem;
-  color: #444;
 }
 
 .mobi-content {
@@ -202,7 +201,6 @@ ul.toc-level-2 {
 
 .mobi-nav-button {
   background-color: #4299e1;
-  color: white;
   border: none;
   border-radius: 4px;
   padding: 0.5rem 1rem;
@@ -222,7 +220,6 @@ ul.toc-level-2 {
 
 .mobi-page-info {
   font-size: 0.9rem;
-  color: #666;
 }
 
 .mobi-iframe-container {
@@ -235,7 +232,6 @@ ul.toc-level-2 {
   width: 100%;
   height: 100%;
   border: none;
-  background-color: white;
 }
 
 .mobi-reader-loading,
@@ -246,7 +242,6 @@ ul.toc-level-2 {
   align-items: center;
   height: 100vh;
   font-size: 1.2rem;
-  color: #666;
 }
 
 .mobi-reader-error {
@@ -266,4 +261,3 @@ ul.toc-level-2 {
     border-bottom: 1px solid #e0e0e0;
   }
 }
-

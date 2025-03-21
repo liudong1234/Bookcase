@@ -4,9 +4,7 @@ import {
   AlignRightOutlined,
   AlignLeftOutlined,
 } from "@ant-design/icons";
-import { ConfigProvider } from "antd";
 const SettingsModal = ({
-  readerTheme,
   open,
   settings,
   onSettingChange,

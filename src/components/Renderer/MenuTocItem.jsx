@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
 import { CiCircleTwoTone } from "@ant-design/icons";
+import { theme } from 'antd';
+import InvertColor from "../../utils/Tool";
+
+const { useToken } = theme;
 
 export const getItemKey = (item, parentPath = "") => {
   return `${parentPath}-${item.id || item.label}`;
@@ -8,7 +12,7 @@ export const getItemKey = (item, parentPath = "") => {
 const expandParentItems = (items, href, parentPath = "", expanded = {}) => {
   for (const item of items) {
     const itemKey = getItemKey(item, parentPath);
-
+    
     if (item.href === href || item.href.includes(href)) {
       let currentPath = parentPath;
       while (currentPath) {
@@ -17,7 +21,7 @@ const expandParentItems = (items, href, parentPath = "", expanded = {}) => {
       }
       return true;
     }
-
+    
     if (item.subitems?.length > 0) {
       const found = expandParentItems(
         item.subitems,
@@ -44,12 +48,12 @@ const MenuTocItem = ({
   allTocItems,
 }) => {
   const [expandedItems, setExpandedItems] = useState({});
-
+  
   const itemKey = getItemKey(item, parentPath);
   const hasSubItems = item.subitems?.length > 0;
   const isExpanded = expandedItems[itemKey] || false;
   const isCurrentChapter = item.href === currentChapter || item.href?.includes(currentChapter);
-
+  const { token } = useToken();
   // 监听 currentChapter 变化，自动展开父目录
   useEffect(() => {
     if (currentChapter) {
@@ -58,7 +62,7 @@ const MenuTocItem = ({
       setExpandedItems(newExpandedItems);
     }
   }, [currentChapter, allTocItems]);
-
+  
   const handleItemClick = (e) => {
     e.stopPropagation();
     if (hasSubItems) {
@@ -70,6 +74,7 @@ const MenuTocItem = ({
       tocSelectHandler(item);
     }
   };
+  const invertedColor = InvertColor(token.colorBgContainer);
 
   return (
     <div className="toc-node">
@@ -83,14 +88,6 @@ const MenuTocItem = ({
           display: "flex",
           alignItems: "center",
           transition: "background 0.2s",
-          background: isCurrentChapter
-            ? readerTheme === "light"
-              ? "#e6f4ff"
-              : "#111d2c"
-            : "transparent",
-          ":hover": {
-            background: readerTheme === "light" ? "#f5f5f5" : "#262626",
-          },
         }}
         onClick={handleItemClick}
       >
@@ -109,13 +106,7 @@ const MenuTocItem = ({
         <span
           style={{
             flex: 1,
-            color: isCurrentChapter
-              ? readerTheme === "light"
-                ? "#1890ff"
-                : "#40a9ff"
-              : readerTheme === "light"
-                ? "#000"
-                : "#fff",
+            color: isCurrentChapter ? invertedColor : "#40a9ff",
             fontSize: 14 - level * 0.5,
             fontWeight: isCurrentChapter ? 500 : 400,
           }}
