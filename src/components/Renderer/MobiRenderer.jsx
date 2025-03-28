@@ -4,7 +4,6 @@ import { Content, Header } from "antd/es/layout/layout";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { theme } from 'antd';
 const { useToken } = theme;
-
 import ReaderToolbar from "./ReaderToolBar";
 import SettingsModal from "./SettingsModal";
 import MenuTocItem from "./MenuTocItem";
@@ -12,6 +11,7 @@ import { getItemKey } from "./MenuTocItem";
 import MobiParser from "../../utils/bookParser/MobiParser";
 import ReadingIndicator from "../../utils/ReadingIndicator";
 import '../BookReader.css'
+import { useKeyboardNavigation, useScrollNavigation } from "../../utils/Tool";
 
 //TODO 连续阅读模式，有待实现，
 //TODO 保存阅读记录
@@ -48,9 +48,14 @@ const MobiRenderer = ({
   };
   const [readerSettings, setReaderSettings] = useState({
     fontSize: 16,
-    fontFamily: "SimSun",
+    fontFamily: "",
     readingMode: "paginated",
     managerMode: "default",
+    lineHeight: "1.4",
+    marginSpace: {
+      left: "2",   // 左侧边距（单位%）
+      right: "2",  // 右侧边距
+    },
     //
   })
   const updateSettings = (key, value) => {
@@ -242,7 +247,7 @@ const MobiRenderer = ({
     if (iframeRef.current) {
       applyThemeSettings();
     }
-  }, [readerSettings.fontSize, readerSettings.fontFamily, readerTheme]);
+  }, [readerSettings.fontSize, readerSettings.fontFamily, readerTheme, readerSettings.lineHeight, readerSettings.marginSpace]);
 
   const handleIframeLoad = () => {
     setTimeout(() => {
@@ -278,6 +283,9 @@ const MobiRenderer = ({
       body.style.fontFamily = readerSettings.fontFamily;
       body.style.background = token.colorBgContainer;
       body.style.color = token.colorText;
+      body.style.lineHeight = readerSettings.lineHeight;
+      body.style.marginLeft = `${readerSettings.marginSpace.left}%`;
+      body.style.marginRight = `${readerSettings.marginSpace.right}%`;
     }
   };
 
@@ -302,6 +310,7 @@ const MobiRenderer = ({
       console.error('Navigation error:', e);
     }
   };
+  
   // 上一页/下一页导航
   const goToPreviousSection = () => {
     if (currentSectionIndex > 0) {
@@ -314,7 +323,9 @@ const MobiRenderer = ({
       setCurrentSectionIndex(currentSectionIndex + 1);
     }
   };
-
+  
+  useKeyboardNavigation(goToPreviousSection, goToNextSection);
+  useScrollNavigation(viewerRef, 100);
   const navigationHandlers = {
     handlePrevPage: () => {
       goToPreviousSection();
@@ -362,7 +373,7 @@ const MobiRenderer = ({
 
       <Content style={{ position: "relative", overflow: "hidden" }}>
         <ReadingIndicator currentPage={currentSectionIndex} totalPages={totalPages} />
-        <div ref={viewerRef} className="mobi-iframe-container" >
+        <div ref={viewerRef} tabIndex={0} className="mobi-iframe-container" >
           {sectionUrl && (
             <iframe
               ref={iframeRef}

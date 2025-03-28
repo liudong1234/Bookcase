@@ -1,122 +1,114 @@
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-
 mod db;
 
-use db::{Database, Book };
+use db::{Book, Database};
+use directories::ProjectDirs;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{command, State};
-use directories::ProjectDirs;
-use std::path::PathBuf;
 
 struct AppState {
     db: Mutex<Database>,
 }
 
 fn get_appdata_dir() -> PathBuf {
-    let proj_dirs = ProjectDirs::from("com", "", "Bookcase")
-        .expect("未找到应用程序目录");
+    let proj_dirs = ProjectDirs::from("com", "", "Bookcase").expect("未找到应用程序目录");
     proj_dirs.data_dir().to_path_buf()
 }
 
 #[command]
-async fn save_book (
-    book_data: Book,
-    state: State<'_, AppState>
-) -> Result<(), String> {
-
-    state.db
-    .lock()
-    .unwrap()
-    .save_book(&book_data)
-    .map_err(|e| e.to_string())?;
+async fn save_book(book_data: Book, state: State<'_, AppState>) -> Result<(), String> {
+    state
+        .db
+        .lock()
+        .unwrap()
+        .save_book(&book_data)
+        .map_err(|e| e.to_string())?;
 
     Ok(())
 }
 
 #[command]
-async fn save_cover (
+async fn save_cover(
     book_id: &str,
     cover_type: String,
-    state: State<'_, AppState>
+    state: State<'_, AppState>,
 ) -> Result<(), String> {
-    state.db
-    .lock()
-    .unwrap()
-    .save_cover(&book_id, cover_type)
-    .map_err(|e| e.to_string())?;
+    state
+        .db
+        .lock()
+        .unwrap()
+        .save_cover(&book_id, cover_type)
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[command]
-async fn get_cover(
-    book_id: String,
-    state: State<'_, AppState>
-) -> Result<Option<String>, String> {
+async fn get_cover(book_id: String, state: State<'_, AppState>) -> Result<Option<String>, String> {
     // 从数据库获取封面
-    let cover_result = state.db
+    let cover_result = state
+        .db
         .lock()
         .unwrap()
         .get_cover(&book_id)
         .map_err(|e| e.to_string())?;
-    
+
     Ok(cover_result)
 }
 
 #[command]
-async fn delete_book(
-    book_id: String,
-    state: State<'_, AppState>
-) -> Result<(), String> {
-    state.db
-    .lock()
-    .unwrap()
-    .delete_book(&book_id)
-    .map_err(|e| e.to_string())?;
-    
-    state.db
-    .lock()
-    .unwrap()
-    .delete_cover(&book_id)
-    .map_err(|e| e.to_string())?;
+async fn delete_book(book_id: String, state: State<'_, AppState>) -> Result<(), String> {
+    state
+        .db
+        .lock()
+        .unwrap()
+        .delete_book(&book_id)
+        .map_err(|e| e.to_string())?;
+
+    state
+        .db
+        .lock()
+        .unwrap()
+        .delete_cover(&book_id)
+        .map_err(|e| e.to_string())?;
 
     // 删除本地文件夹中的书籍和封面(在同一个文件夹)
     let path = get_appdata_dir().to_string_lossy().to_string();
     let file_path = format!("{}\\{}", path, book_id);
     let book_path = Path::new(&file_path);
     if book_path.exists() {
-        fs::remove_dir_all(book_path).map_err(|e| {
-            print!("{}", e.to_string());
-            e.to_string()
-        }).expect_err("删除目录失败");
+        fs::remove_dir_all(book_path)
+            .map_err(|e| {
+                print!("{}", e.to_string());
+                e.to_string()
+            })
+            .expect_err("删除目录失败");
     }
-    
+
     Ok(())
 }
 
 #[command]
-async fn get_books(
-    state: State<'_, AppState>
-) -> Result<Vec<Book>, String> {
-    state.db
-    .lock()
-    .unwrap()
-    .get_books()
-    .map_err(|e| e.to_string())
+async fn get_books(state: State<'_, AppState>) -> Result<Vec<Book>, String> {
+    state
+        .db
+        .lock()
+        .unwrap()
+        .get_books()
+        .map_err(|e| e.to_string())
 }
 
 #[command]
-async fn get_book(
-    book_id: String,
-    state: State<'_, AppState>,
-) -> Result<Option<Book>, String> {
-    state.db
-    .lock()
-    .unwrap()
-    .get_book_by_id(&book_id)
-    .map_err(|e| e.to_string())
+async fn get_book(book_id: String, state: State<'_, AppState>) -> Result<Option<Book>, String> {
+    state
+        .db
+        .lock()
+        .unwrap()
+        .get_book_by_id(&book_id)
+        .map_err(|e| e.to_string())
 }
 
 #[command]
@@ -149,14 +141,14 @@ fn upload_file_chunk(
         // 执行移动操作
         fs::rename(&file_path, &destination).map_err(|e| format!("移动文件失败: {}", e))?;
         // 保存最终路径
-        return  Ok(file_name);
+        return Ok(file_name);
     }
     Ok("".to_string())
 }
 
-
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .manage(AppState {
             db: Mutex::new(Database::new("books.db").unwrap()),
@@ -168,7 +160,6 @@ pub fn run() {
             get_books,
             get_cover,
             delete_book,
-
             upload_file_chunk,
         ])
         .setup(|app| {

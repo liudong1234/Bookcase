@@ -11,6 +11,7 @@ import { getItemKey } from "./MenuTocItem";
 import ReadingIndicator from "../../utils/ReadingIndicator";
 
 import { theme } from 'antd';
+import { useKeyboardNavigation, useScrollNavigation } from "../../utils/Tool";
 const { useToken } = theme;
 
 const EpubRenderer = ({
@@ -41,6 +42,11 @@ const EpubRenderer = ({
     fontFamily: "SimSun",
     readingMode: "paginated",
     managerMode: "default",
+    lineHeight: "1.5",
+    marginSpace: {
+      left: "5",   // 左侧边距（单位%）
+      right: "5",  // 右侧边距
+    },
     //
   })
 
@@ -145,15 +151,41 @@ const EpubRenderer = ({
     };
   }, [book, readerSettings.readingMode, readerSettings.managerMode]);
 
-
-
-
   // Apply theme settings when they change
   useEffect(() => {
     if (bookRef.current?.rendition) {
       applyThemeSettings(bookRef.current.rendition);
     }
   }, [readerSettings.fontSize, readerSettings.fontFamily, readerTheme]);
+
+  useEffect(() => {
+    if (bookRef.current?.rendition) {
+      changeLineheight(bookRef.current.rendition);
+    }
+  }, [readerSettings.lineHeight])
+
+  const changeLineheight = (rendition) => {
+    rendition.themes.default({
+      body: {
+        "line-height": `${readerSettings.lineHeight} !important`
+      },
+    });
+  }
+
+  useEffect(() => {
+    if (bookRef.current?.rendition) {
+      changeMarginSpace(bookRef.current.rendition);
+    }
+  }, [readerSettings.marginSpace])
+
+  const changeMarginSpace = (rendition) => {
+    rendition.themes.default({
+      p: {
+        "margin-left": `${readerSettings.marginSpace.left}%`,
+        "margin-right": `${readerSettings.marginSpace.right}%`,
+      }
+    });
+  }
 
 
   const eventHandlers = {
@@ -218,7 +250,9 @@ const EpubRenderer = ({
         "font-family": readerSettings.fontFamily,
         "background-color": token.colorBgContainer,
         "color": token.colorText,
+        "line-height": `${readerSettings.lineHeight} !important`
       },
+      
     });
   };
 
@@ -271,6 +305,9 @@ const EpubRenderer = ({
       updateUiState('openToc', false);
     }
   };
+
+  useKeyboardNavigation(navigationHandlers.handlePrevPage, navigationHandlers.handleNextPage);
+  useScrollNavigation(viewerRef, 100);
   return (
     <>
       {toolBar && (

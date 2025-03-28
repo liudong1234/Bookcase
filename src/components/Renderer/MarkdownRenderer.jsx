@@ -6,8 +6,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { theme } from 'antd';
+import { useScrollNavigation } from "../../utils/Tool";
 const { useToken } = theme;
-
 
 import MenuTocItem, { getItemKey } from "./MenuTocItem";
 import ReaderToolbar from "./ReaderToolBar";
@@ -95,9 +95,11 @@ const MarkdownRenderer = ({
     readingMode: "paginated",
     managerMode: "default",
     //其他
-    pageMargin: 5,
-    lineSpacing: 5,
-    alignment: "center",
+    lineHeight: "1.5",
+    marginSpace: {
+      left: "0",   // 左侧边距（单位%）
+      right: "0",  // 右侧边距
+    },
   })
   const updateSettings = (key, value) => {
     setReaderSettings(prev => ({
@@ -166,8 +168,9 @@ const MarkdownRenderer = ({
     if (markdownRef.current) {
       markdownRef.current.style.fontSize = `${readerSettings.fontSize}px`;
       markdownRef.current.style.fontFamily = readerSettings.fontFamily;
-      markdownRef.current.style.lineHeight = readerSettings.lineSpacing;
       markdownRef.current.style.color = token.colorText;
+      markdownRef.current.style.marginLeft = `${readerSettings.marginSpace.left}%`;
+      markdownRef.current.style.marginRight = `${readerSettings.marginSpace.right}%`;
     }
     eventHandlers.onRenditionReady(rendition);
   }, [readerSettings]);
@@ -276,8 +279,8 @@ const MarkdownRenderer = ({
         style={{
           borderBottom: '1px solid #eaecef',
           paddingBottom: '.3em',
-          marginTop: '24px',
-          marginBottom: '16px',
+          marginTop: '12px',
+          marginBottom: '8px',
           fontSize: '2em',
         }}
         {...props}
@@ -290,8 +293,8 @@ const MarkdownRenderer = ({
         style={{
           borderBottom: '1px solid #eaecef',
           paddingBottom: '.3em',
-          marginTop: '24px',
-          marginBottom: '16px',
+          marginTop: '12px',
+          marginBottom: '8px',
           fontSize: '1.5em',
         }}
         {...props}
@@ -302,8 +305,8 @@ const MarkdownRenderer = ({
         id={`${readerState.toc.find(item => 
           item.level === 3 && item.label === props.children.toString())?.href}`}
         style={{
-          marginTop: '24px',
-          marginBottom: '16px',
+          marginTop: '12px',
+          marginBottom: '8px',
           fontSize: '1.25em',
         }}
         {...props}
@@ -314,8 +317,8 @@ const MarkdownRenderer = ({
         id={`${readerState.toc.find(item => 
           item.level === 4 && item.label === props.children.toString())?.href}`}
         style={{
-          marginTop: '24px',
-          marginBottom: '16px',
+          marginTop: '12px',
+          marginBottom: '8px',
           fontSize: '1.0em',
         }}
         {...props}
@@ -327,7 +330,8 @@ const MarkdownRenderer = ({
         style={{
           marginTop: '0',
           marginBottom: '16px',
-          lineHeight: '1.6'
+          lineHeight: readerSettings.lineHeight,
+          textIndent: readerSettings.fontSize * 2,
         }}
         {...props}
       />
@@ -477,6 +481,8 @@ const MarkdownRenderer = ({
   const handleTocClose = () => {
     setUiState('openToc', false);
   }
+
+    useScrollNavigation(viewerRef, 100);
 
   return (
     <>

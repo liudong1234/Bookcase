@@ -1,9 +1,4 @@
 import { Select, Row, Modal, Col, Slider, InputNumber, theme } from "antd";
-import {
-  AlignCenterOutlined,
-  AlignRightOutlined,
-  AlignLeftOutlined,
-} from "@ant-design/icons";
 const SettingsModal = ({
   open,
   settings,
@@ -11,6 +6,9 @@ const SettingsModal = ({
   onModeChange,
   onClose,
 }) => {
+
+  const {left, right} = settings.marginSpace;
+
   return (
     <Modal
       title="页面设置"
@@ -116,19 +114,56 @@ const SettingsModal = ({
         >
           页边距
         </span>
+      </Row>
+      <Row>
+        <span
+          style={{
+            fontSize: "14px",
+            marginRight: "10px",
+            marginTop: "5px",
+            marginLeft: "28px"
+          }}
+        >
+          左
+        </span>
         <Col span={10}>
-          <Slider min={12} max={50} value={12} onChange={() => {}} />
+          <Slider min={0} max={20} value={left} onChange={(value) => onSettingChange("marginSpace", {left:value, right:right})} />
         </Col>
         <Col span={4}>
           <InputNumber
-            min={12}
-            max={50}
+            min={0}
+            max={20}
             style={{ margin: "0 16px" }}
-            value={12}
-            onChange={() => {}}
+            value={left}
+            onChange={(value) => onSettingChange("marginSpace", {left:value, right:right})}
           />
         </Col>
       </Row>
+      <Row>
+        <span
+          style={{
+            fontSize: "14px",
+            marginRight: "10px",
+            marginTop: "5px",
+            marginLeft: "28px"
+          }}
+        >
+          右
+        </span>
+        <Col span={10}>
+          <Slider min={0} max={20} value={right} onChange={(value) => onSettingChange("marginSpace", {left:left, right:value})} />
+        </Col>
+        <Col span={4}>
+          <InputNumber
+            min={0}
+            max={20}
+            style={{ margin: "0 16px" }}
+            value={right}
+            onChange={(value) => onSettingChange("marginSpace", {left: left, right:value})}
+          />
+        </Col>
+      </Row>
+
 
       <Row>
         <span
@@ -142,41 +177,22 @@ const SettingsModal = ({
         </span>
         <Col span={10}>
           <Slider
-            min={0}
-            max={20}
-            value={settings.lineSpacing}
-            onChange={(value) => onSettingChange("lineSpacing", value)}
+            min={1.0}
+            step={0.2}
+            max={5}
+            value={settings.lineHeight}
+            onChange={(value) => onSettingChange("lineHeight", value)}
           />
         </Col>
         <Col span={4}>
           <InputNumber
-            min={0}
-            max={20}
+            min={1.0}
+            step={0.2}
+            max={5}
             style={{ margin: "0 16px" }}
-            value={settings.lineSpacing}
-            onChange={(value) => onSettingChange("lineSpacing", value)}
+            value={settings.lineHeight}
+            onChange={(value) => onSettingChange("lineHeight", value)}
           />
-        </Col>
-      </Row>
-
-      <Row>
-        <span
-          style={{
-            fontSize: "14px",
-            marginRight: "10px",
-            marginTop: "5px",
-          }}
-        >
-          对齐方式
-        </span>
-        <Col style={{ marginRight: "8px", fontSize: "20px" }}>
-          <AlignLeftOutlined />
-        </Col>
-        <Col style={{ marginRight: "8px", fontSize: "20px" }}>
-          <AlignCenterOutlined />
-        </Col>
-        <Col style={{ marginRight: "8px", fontSize: "20px" }}>
-          <AlignRightOutlined />
         </Col>
       </Row>
     </Modal>

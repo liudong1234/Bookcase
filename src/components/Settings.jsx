@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dropdown, Space, Drawer, Button, message } from "antd";
 import { SettingTwoTone,SettingFilled  } from '@ant-design/icons'
-
+import { open } from '@tauri-apps/plugin-dialog';
 import { directory } from "../utils/Tool";
 
 const items = [
@@ -25,28 +25,36 @@ const items = [
   },
 ];
 const Settings = () => {
-  const [open, setOpen] = useState(false);
+  const [openDrawer, setOpenDrawer] = useState(false);
   
   const showDrawer = () => {
-    setOpen(true);
+    setOpenDrawer(true);
   };
   
   const onClose = () => {
-    setOpen(false);
+    setOpenDrawer(false);
   };
   const onClick = ({ key }) => {
     let num = Number(key)
     switch (num) {
       case 1:
+        console.log(directory);
         showDrawer();
         break;
     
       default:
         break;
     }
-    message.info(`Click on item ${key}`);
   };
   
+  const selectedDir = async () => {
+    const file = await open({
+      multiple: false,
+      directory: true,
+    });
+  }
+
+
 
   return (
     <>
@@ -69,7 +77,7 @@ const Settings = () => {
         title="文件管理"
         placement='top'
         onClose={onClose}
-        open={open}
+        open={openDrawer}
         extra={
           <Space>
             <Button onClick={onClose}>取消</Button>
@@ -79,7 +87,10 @@ const Settings = () => {
           </Space>
         }
       >
-
+        <p>文件保存路径：{directory}</p>
+        <Button onClick={selectedDir}>
+          点击
+        </Button>
       </Drawer>
     </>
   )

@@ -6,6 +6,7 @@
     "main"
   ],
   "permissions": [
+    "dialog:allow-open",
     "core:path:default",
     "fs:allow-appdata-read-recursive",
     "fs:read-files",
@@ -13,11 +14,11 @@
     "fs:scope",
     {
       "identifier": "fs:scope",
-      "allow": [{ "path": "$APPDATA" }, { "path": "$APPDATA/**" }]
+      "allow": [{ "path": "$APPDATA" }, { "path": "$APPDATA/**" }, {"path": "$DOCUMENTS/**"}, {"path": "$DOWNLOAD/**"}]
     },
     {
       "identifier": "fs:read-all",
-      "allow": [{ "path": "$APPDATA" }, { "path": "$APPDATA/**" }]
+      "allow": [{ "path": "$APPDATA" }, { "path": "$APPDATA/**" }, {"path": "$DOCUMENTS/**"}, {"path": "$DOWNLOAD/**"}]
     }
 
   ]

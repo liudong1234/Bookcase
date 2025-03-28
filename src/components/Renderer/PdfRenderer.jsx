@@ -20,6 +20,8 @@ import "@react-pdf-viewer/bookmark/lib/styles/index.css";
 import ReadingIndicator from "../../utils/ReadingIndicator";
 import ReaderToolbar from "./ReaderToolBar";
 
+import { useKeyboardNavigation, useScrollNavigation } from "../../utils/Tool";
+
 const { Option } = Select;
 
 const PDFRenderer = ({
@@ -271,6 +273,7 @@ const PDFRenderer = ({
     setUiState("openToc", false);
   };
 
+  useScrollNavigation(viewerRef, 100);
 
   return (
     <>
