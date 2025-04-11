@@ -11,6 +11,26 @@
     "fs:allow-appdata-read-recursive",
     "fs:read-files",
     "fs:write-files",
+    "fs:allow-mkdir",
+    "shell:allow-execute",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "explorer",
+          "cmd": "explorer"
+        },
+        {
+          "name": "open",
+          "cmd": "open",
+          "args": [
+            {
+              "validator": "^\\/.*"
+            }
+          ]
+        }
+      ]
+    },
     "fs:scope",
     {
       "identifier": "fs:scope",

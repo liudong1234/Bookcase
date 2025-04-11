@@ -6,13 +6,26 @@
   flex-direction: column;
 }
 
+.ant-layout-header {
+  z-index: 1000;
+}
+
 .reader-header {
-  padding: 0 15px;
+  /* padding: 0 15px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  height: 64px;
+  height: 64px; */
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  top: 0px;
+  left: 0px; 
+  right: 0px;
 }
 
 .reader-tools {

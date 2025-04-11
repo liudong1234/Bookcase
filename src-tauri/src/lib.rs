@@ -1,8 +1,8 @@
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 mod db;
-
+// mod file;
 use db::{Book, Database};
-use directories::ProjectDirs;
+use directories::{BaseDirs, ProjectDirs};
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::Path;
@@ -146,8 +146,41 @@ fn upload_file_chunk(
     Ok("".to_string())
 }
 
+#[command]
+fn create_plugindir() -> Result<bool, String> {
+    if let Some(app_dirs) = BaseDirs::new() {
+        let data_dir = app_dirs.data_dir();
+        let desc_dir = (data_dir.join("Bookcase")).join("plugins");
+        fs::create_dir_all(desc_dir).map_err(|e| format!("创建插件目录失败: {}", e))?;
+
+        
+    }
+    Ok(true)
+}
+
+#[command]
+fn upload_bg_img(pic: Vec<u8>, file_name: &str) -> Result<bool, String> {
+    if let Some(app_dirs) = BaseDirs::new() {
+        let data_dir = app_dirs.data_dir();
+        let desc_dir = (data_dir.join("Bookcase")).join("background");
+        fs::create_dir_all(&desc_dir).map_err(|e| format!("创建背景目录失败: {}", e))?;
+        let file_path = format!("{}\\{}", desc_dir.to_string_lossy().to_string(), file_name);
+
+        let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&file_path)
+        .map_err(|e| format!("打开文件失败: {}", e))?;
+        file.write_all(&pic).map_err(|e| e.to_string())?;
+
+    }
+    Ok(true)
+}
+
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .manage(AppState {
@@ -161,6 +194,8 @@ pub fn run() {
             get_cover,
             delete_book,
             upload_file_chunk,
+            create_plugindir,
+            upload_bg_img,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
