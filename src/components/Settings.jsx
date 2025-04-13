@@ -14,7 +14,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { readDir, readFile } from '@tauri-apps/plugin-fs';
 import { join } from "@tauri-apps/api/path";
 const { TextArea } = Input;
-
+import { useTheme } from "../contexts/ThemeContext";
 const items = [
   {
     key: "1",
@@ -53,15 +53,17 @@ const DEFAULT_COLOR = [
 ];
 
 
-const Settings = ({data, onUpdate}) => {
+const Settings = ({onUpdate}) => {
   const [openDrawer, setOpenDrawer] = useState(false);
   const [openPluginModal, setOpenPluginModal] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [openCommonSettingsModal, setOpenCommonSettingsModal] = useState(false);
   const [bgList, setBgList] = useState([]);
-  const {bgImage, bgUrl} = data;
-  const {setBgImage, setBgUrl} = onUpdate;
+  const { setBgUrl } = onUpdate;
   const [textAreas, setTextAreas] = useState([]);
+  const { bgImage, setBackgroundImage } = useTheme();
+  const { themeConfig, updateThemeConfig } = useTheme();
+  const [primaryColor, setPrimaryColor] = useState(themeConfig.token.colorPrimary);
 
   const showDrawer = () => {
     setOpenDrawer(true);
@@ -179,6 +181,7 @@ const Settings = ({data, onUpdate}) => {
     setTimeout(() => {
       setOpenCommonSettingsModal(false);
       setConfirmLoading(false);
+      updateThemeConfig({token: {colorPrimary: primaryColor}});
     }, 2000);
   }
   const handleCommonSettingsModalCancel = () => {
@@ -219,7 +222,7 @@ const Settings = ({data, onUpdate}) => {
     }
   }
   const onChangeColorImg = e => {
-    setBgImage(e.target.checked);
+    setBackgroundImage(e.target.checked);
     if (e.target.checked) {
       loadImages();
     }
@@ -389,12 +392,13 @@ const Settings = ({data, onUpdate}) => {
           <Space>
             <Popover content={"主体颜色"}>品牌色</Popover>
             <ColorPicker
-              defaultValue={DEFAULT_COLOR}
+              defaultValue={primaryColor}
               allowClear
               showText
               mode={['single', 'gradient']}
               onChangeComplete={(color) => {
                 console.log(color.toCssString());
+                setPrimaryColor(color.toHex());
               }}
             />
           </Space>

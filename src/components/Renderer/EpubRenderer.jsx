@@ -248,7 +248,7 @@ const EpubRenderer = ({
       body: {
         "font-size": `${readerSettings.fontSize}px !important`,
         "font-family": readerSettings.fontFamily,
-        "background-color": token.colorBgContainer,
+        // "background-color": token.colorBgContainer,
         "color": token.colorText,
         "line-height": `${readerSettings.lineHeight} !important`
       },

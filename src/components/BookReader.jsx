@@ -5,6 +5,9 @@ import EpubRenderer from "./Renderer/EpubRenderer";
 import PDFRenderer from "./Renderer/PdfRenderer";
 import MarkdownRenderer from "./Renderer/MarkdownRenderer";
 import MobiRenderer from "./Renderer/MobiRenderer";
+
+import { useTheme } from "../contexts/ThemeContext";
+
 // Define renderer mapping
 const RENDERERS = {
   epub: EpubRenderer,
@@ -14,7 +17,8 @@ const RENDERERS = {
   mobi: MobiRenderer,
 };
 
-const BookReader = ({ book, onClose, customThemeHandler }) => {
+const BookReader = ({ book, onClose }) => {
+  const { isDark, toggleDarkMode } = useTheme();
   const viewerRef = useRef(null);
   // Get the appropriate renderer based on file type
   const getRenderer = () => {
@@ -28,7 +32,7 @@ const BookReader = ({ book, onClose, customThemeHandler }) => {
         book={book}
         viewerRef={viewerRef}
         onLeftCloseHandler={onClose}
-        customThemeHandler={customThemeHandler}
+        customThemeHandler={toggleDarkMode}
       />
     );
   };

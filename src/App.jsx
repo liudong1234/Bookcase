@@ -1,7 +1,5 @@
 import React, { useEffect, useState, Suspense } from "react";
 import { Layout, message, Spin, Switch, ConfigProvider } from "antd";
-import antdTheme from "antd/es/theme";
-
 import {
   AppstoreTwoTone,
   ProfileTwoTone,
@@ -15,9 +13,11 @@ import ContentView from "./components/ContentView";
 import { readFile, BaseDirectory } from "@tauri-apps/plugin-fs";
 const { Header, Footer } = Layout;
 
+import ThemeSwitcher from "./components/ThemeSwitcher";
 import { bookOperations } from "./services/BookOperations";
 import Settings from "./components/Settings";
 import { pluginManager } from "./plugins/PluginManager";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 import "./App.css";
 const LazyBookReader = React.lazy(() => import("./components/BookReader"));
@@ -27,15 +27,14 @@ const App = () => {
   const [siderBarHidden, setSiderBarHidden] = useState(false);
   const [bookshelfStyle, setBookshelfStyle] = useState(false);
   const [result, setResult] = useState(false);
-  const [bgImage, setBgImage] = useState(false);
-  const [bgUrl, setBgUrl] = useState('')
+  const [bgUrl, setBgUrl] = useState("");
+  // const { theme, updateColor } = useTheme();
   //书籍信息
   const [books, setBooks] = useState([]);
   const [bookCovers, setBookCovers] = useState({});
 
   const [selectedMenu, setSelectedMenu] = useState("1");
   const [selectedBook, setSelectedBook] = useState();
-  const [isDark, setIsDark] = useState(false);
 
   const loadData = async () => {
     try {
@@ -105,47 +104,12 @@ const App = () => {
     setSelectedBook(book);
   };
 
-  const handleCustomTheme = (value) => {
-    setIsDark(value);
-  }
-
   return (
-    <ConfigProvider
-      theme={{
-        algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-        token: {
-          // ========= 颜色 =========
-          colorPrimary: '#1890ff',    // 全局主色
-          colorInfo: '#1890ff',       // Info 颜色
-          colorSuccess: '#52c41a',   // 成功色
-          colorWarning: '#faad14',    // 警告色
-          colorError: '#ff4d4f',      // 错误色
-          // colorText: 'blue',
-          // ========= 字号 =========
-          fontSize: 14,               // 基础字号
-          fontSizeSM: 12,             // 小号文本（如辅助文字）
-          fontSizeLG: 16,             // 大号文本（如标题）
-          fontSizeXL: 20,             // 超大号文本
-
-          // ========= 其他 =========
-          borderRadius: 10,            // 组件圆角
-        },
-        components: {
-          Layout: {
-            headerBg: !bgImage ? (isDark ? '#000000' : '#efefef') : undefined,
-            colorBgLayout: !bgImage ? (isDark ? '#000000' : '#f5f5f5') : undefined,
-            siderBg: !bgImage ? (isDark ? '#000000' : '#efefef') : undefined,
-            lightSiderBg: !bgImage ? (isDark ? '#000000' : '#ffffff') : undefined,
-            footerBg: !bgImage ? (isDark ? '#000000' : '#f8f8f8') : undefined,
-          },
-          Menu: {
-            itemBg: !bgImage ? (isDark ? '#000000' : '#ffffff') : undefined,
-          },
-        }
-      }}
-
-    >
-      <Layout className="background-layer" style={{ '--dynamic-bg-url': `url(${bgUrl})` }}>
+    <ThemeProvider>
+      <Layout
+        className="background-layer"
+        style={{ "--dynamic-bg-url": `url(${bgUrl})` }}
+      >
         {!siderBarHidden && (
           <Header className="app-header">
             <h1>Bookcase📚</h1>
@@ -153,17 +117,11 @@ const App = () => {
               <div>
                 <CustomUpload books={books} onResult={handleResult} />
               </div>
-              <div className="theme-toggle">
-                <Switch
-                  checked={isDark}
-                  onChange={setIsDark}
-                  checkedChildren={<SunFilled />}
-                  unCheckedChildren={<MoonFilled />}
-                />
-              </div>
+              <ThemeSwitcher />
               <Settings
-                data={{ bgImage: bgImage, bgUrl: bgUrl }}
-                onUpdate={{ setBgImage: setBgImage, setBgUrl: setBgUrl }} />
+                data={{ bgUrl: bgUrl }}
+                onUpdate={{ setBgUrl: setBgUrl }}
+              />
             </div>
           </Header>
         )}
@@ -216,12 +174,11 @@ const App = () => {
                 setSelectedBook(null);
                 setSiderBarHidden(false);
               }}
-              customThemeHandler={handleCustomTheme}
             />
           </Suspense>
         )}
       </Layout>
-    </ConfigProvider>
+    </ThemeProvider>
   );
 };
 

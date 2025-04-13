@@ -6,24 +6,13 @@ import {
   ArrowRightOutlined,
   SettingTwoTone,
 } from "@ant-design/icons";
-
-const themes = {
-  light: { name: "日间模式", color: "#ffffff", text: "#333" },
-  dark: { name: "夜间模式", color: "#121212", text: "#fff" },
-};
-
+import ThemeSwitcher from "../ThemeSwitcher";
 const ReaderToolbar = ({
-  readerTheme,
   navigationHandlers,
   onSettingsClick,
   onTocClick,
-  onThemeToggle,
   children,
 }) => {
-  const handleThemeChange = (value) => {
-    onThemeToggle(value);
-  };
-
   return (
     <div className="reader-tools" style={{ display: "flex", gap: "8px" }}>
       <Tooltip title="上一页">
@@ -40,21 +29,7 @@ const ReaderToolbar = ({
       </Tooltip>
       {children}
       <Tooltip title="切换主题">
-        <div className="theme-selector">
-          <Select
-            defaultValue={readerTheme}
-            style={{
-              width: 130,
-            }}
-            onChange={handleThemeChange}
-          >
-            {Object.keys(themes).map((key) => (
-              <Option key={key} value={key}>
-                {themes[key].name}
-              </Option>
-            ))}
-          </Select>
-        </div>
+        <ThemeSwitcher />
       </Tooltip>
       <Tooltip title="目录">
         <Button icon={<MenuOutlined />} onClick={onTocClick} />
