@@ -1,15 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { Drawer, Button } from "antd";
+import { Button } from "antd";
 import { Content, Header } from "antd/es/layout/layout";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { theme } from 'antd';
 const { useToken } = theme;
 import ReaderToolbar from "./ReaderToolBar";
 import SettingsModal from "./SettingsModal";
-import MenuTocItem from "./MenuTocItem";
-import { getItemKey } from "./MenuTocItem";
+import CustomDrawer from "../CustomDrawer";
 import MobiParser from "../../utils/bookParser/MobiParser";
 import ReadingIndicator from "../../utils/ReadingIndicator";
+import { useTheme } from "../../contexts/ThemeContext";
+
 import '../BookReader.css'
 import { useKeyboardNavigation, useScrollNavigation } from "../../utils/Tool";
 
@@ -19,17 +20,18 @@ const MobiRenderer = ({
   book,
   onLeftCloseHandler,
   viewerRef,
-  customThemeHandler,
 }) => {
   const [mobibook, setMobiBook] = useState();
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [currentChapter, setCurrentChapter] = useState();
   const [sectionUrl, setSectionUrl] = useState(null);
-  const [readerTheme, setReaderTheme] = useState('light');
   const [title, setTitle] = useState('');
   const [toolBar, setToolBar] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const { token } = useToken();
+  const { isDark } = useTheme();
+  const lastScrollTime = useRef(0);
+
   const [readerState, setReaderState] = useState({
     currentLocation: null,
     toc: [],
@@ -64,15 +66,6 @@ const MobiRenderer = ({
       [key]: value
     }));
   };
-  const updateTheme = (value) => {
-    setReaderTheme(value);
-    if (value == "dark"){
-      customThemeHandler(true);
-    }
-    else{
-      customThemeHandler(false);
-    }
-  }
 
   // Reading mode handler
   const handleModeChange = (value) => {
@@ -138,12 +131,100 @@ const MobiRenderer = ({
       }
     };
     
+        const iframe = iframeRef.current;
+    if (!iframe) return;
+    let contentWindow;
+    const handleWheel = (event) => {
+      const direction = event.deltaY > 0 ? 'down' : 'up';
+      
+      const iframeDoc = contentWindow.document;
+      const { clientHeight } = iframeDoc.documentElement;
+      const { scrollY, innerHeight} = contentWindow;
+      const isAtBottom = scrollY + innerHeight >= clientHeight;
+      const isAtTop = scrollY <= 0;
+      
+      if (direction === 'down' && isAtBottom) {
+        goToNextSection();
+      } else if (direction === 'up' && isAtTop) {
+        goToPreviousSection();
+      }
+    };
+
+    const attachWheelListener = () => {
+      contentWindow = iframe.contentWindow;
+      if (!contentWindow) return;
+  
+      contentWindow.addEventListener('wheel', handleWheel);
+    };
+  
+    const detachWheelListener = () => {
+      contentWindow?.removeEventListener('wheel', handleWheel);
+    };
+  
+    iframe.addEventListener('load', attachWheelListener);
+  
+    // 如果 iframe 已加载完成，直接绑定
+    if (iframe.contentDocument?.readyState === 'complete') {
+      attachWheelListener();
+    }
+    
+
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-
-
+    return () => {
+      window.removeEventListener('message', handleMessage);
+            iframe.removeEventListener('load', attachWheelListener);
+      detachWheelListener();
+    }
+    
+    
   }, []);
+  
+  
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    let contentWindow;
+    const handleWheel = (event) => {
+      const direction = event.deltaY > 0 ? 'down' : 'up';
+      
+      const iframeDoc = contentWindow.document;
+      const { clientHeight } = iframeDoc.documentElement;
+      const { scrollY, innerHeight} = contentWindow;
+      const isAtBottom = scrollY + innerHeight >= clientHeight;
+      const isAtTop = scrollY <= 0;
+      
+      if (direction === 'down' && isAtBottom) {
+        goToNextSection();
+      } else if (direction === 'up' && isAtTop) {
+        goToPreviousSection();
+      }
+    };
 
+    const attachWheelListener = () => {
+      contentWindow = iframe.contentWindow;
+      if (!contentWindow) return;
+  
+      contentWindow.addEventListener('wheel', handleWheel);
+    };
+  
+    const detachWheelListener = () => {
+      contentWindow?.removeEventListener('wheel', handleWheel);
+    };
+  
+    iframe.addEventListener('load', attachWheelListener);
+  
+    // 如果 iframe 已加载完成，直接绑定
+    if (iframe.contentDocument?.readyState === 'complete') {
+      attachWheelListener();
+    }
+  
+    return () => {
+      iframe.removeEventListener('load', attachWheelListener);
+      detachWheelListener();
+    };
+
+  }, [])
+  
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -171,9 +252,11 @@ const MobiRenderer = ({
           localStorage.setItem(`book-progress-${title}`, 'filepos:' + nonEmptyIds[0]);
           setCurrentChapter('filepos:' + nonEmptyIds[0]);
         }, 100);
+      
       };
-
+ 
       contentWindow.addEventListener('scroll', handleScroll);
+
 
       return () => {
         contentWindow.removeEventListener('scroll', handleScroll);
@@ -247,7 +330,7 @@ const MobiRenderer = ({
     if (iframeRef.current) {
       applyThemeSettings();
     }
-  }, [readerSettings.fontSize, readerSettings.fontFamily, readerTheme, readerSettings.lineHeight, readerSettings.marginSpace]);
+  }, [readerSettings.fontSize, readerSettings.fontFamily, readerSettings.lineHeight, readerSettings.marginSpace, isDark]);
 
   const handleIframeLoad = () => {
     setTimeout(() => {
@@ -264,6 +347,7 @@ const MobiRenderer = ({
             }
             // 向父窗口发送消息
             window.parent.postMessage({ type: 'toggleToolbar' }, '*');
+            window.focus();
           });
         `;
         iframeDoc.body.appendChild(script);
@@ -274,14 +358,12 @@ const MobiRenderer = ({
     }, 500);
   };
 
-
   const applyThemeSettings = () => {
     if (iframeRef.current) {
       const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
       const body = iframeDoc.body;
       body.style.fontSize = `${readerSettings.fontSize}px`;
       body.style.fontFamily = readerSettings.fontFamily;
-      body.style.background = token.colorBgContainer;
       body.style.color = token.colorText;
       body.style.lineHeight = readerSettings.lineHeight;
       body.style.marginLeft = `${readerSettings.marginSpace.left}%`;
@@ -361,11 +443,9 @@ const MobiRenderer = ({
               {title}
             </h3>
             <ReaderToolbar
-              readerTheme={readerTheme}
               navigationHandlers={navigationHandlers}
               onSettingsClick={() => updateUiState('openSettings', true)}
               onTocClick={() => updateUiState('openToc', true)}
-              onThemeToggle={() => updateTheme(readerTheme === 'light' ? 'dark' : 'light')}
             />
           </Header>
         )
@@ -386,34 +466,14 @@ const MobiRenderer = ({
           )}
         </div>
       </Content>
-      <Drawer
-        title="目录"
-        placement="left"
-        open={uiState.openToc}
-        onClose={() => handleTocClose()}
-        width={300}
-        className="my-toc-drawer"
-      >
-        <div
-          className="toc-list"
-          style={{
-            height: "100%",
-            overflow: "auto",
-          }}
-        >
-          {readerState.toc.map((item, index) => (
-            <MenuTocItem
-              key={getItemKey(item)}
-              readerTheme={readerTheme}
-              item={item}
-              tocSelectHandler={navigationHandlers.handleTocSelect}
-              currentChapter={currentChapter} level={0}
-              allTocItems={readerState.toc}
-            />
-          ))}
-        </div>
-      </Drawer>
 
+      <CustomDrawer 
+        toc={readerState.toc}
+        currentChapter={currentChapter}
+        openToc={uiState.openToc}
+        onClose={handleTocClose}
+        onSelect={navigationHandlers.handleTocSelect}
+      />
       <SettingsModal
         open={uiState.openSettings}
         settings={readerSettings}

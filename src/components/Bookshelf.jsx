@@ -1,37 +1,17 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, Avatar, List, Button, Empty } from 'antd';
 import { StarFilled } from '@ant-design/icons';
 const { Meta } = Card;
-
-import { readFile, BaseDirectory } from "@tauri-apps/plugin-fs";
-import { getMimeType } from '../utils/FileDetector';
-
 import './Bookshelf.css';
 import { Content } from 'antd/es/layout/layout';
-
+import { loadFile } from '../utils/Tool';
 const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
-  const { handleHideSiderBar, handleDeleteBook, handleSelectedBook, bookshelfStyle } = bookshelfSettings;
+  const { handleDeleteBook, handleSelectedBook,handleCollectBook, bookshelfStyle } = bookshelfSettings;
 
   const [hoveredBookId, setHoveredBookId] = useState(null); // 新增：记录当前悬浮的书籍 ID
   const handleClickBook = async (book) => {
-    try {
-      const filePath = 'data\\' + book.id + '\\' + book.name;
-      const fileBytes = await readFile(filePath, { baseDir: BaseDirectory.AppData });
-
-      // 从路径中提取文件名
-      const filename = filePath.split(/[/\\]/).pop();
-
-      // 创建 Blob 对象
-      const blob = new Blob([new Uint8Array(fileBytes)], {
-        type: getMimeType(filename) // 根据文件扩展名获取 MIME 类型
-      });
-
-      // 创建 File 对象
-      handleSelectedBook(new File([blob], filename, { type: blob.type }));
-    } catch (error) {
-      console.error('转换文件失败:', error);
-      throw error;
-    }
+    const content = await loadFile(book);
+    handleSelectedBook(content);
   }
 
   // 渲染书架
@@ -55,12 +35,12 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
                       hoverable
                       cover={
                         <div className="cover-container">
-                          <img alt="封面" src={bookCovers[book.id]} />
+                          <img alt="封面" src={bookCovers[book.id]['url']} />
                           {hoveredBookId === book.id && ( // 悬浮时显示操作按钮
                             <div className="cover-overlay">
-                              <button onClick={() => { handleClickBook(book); handleHideSiderBar(true); }}>阅读</button>
+                              <button onClick={() => { handleClickBook(book); }}>阅读</button>
                               <button onClick={() => handleDeleteBook(book.id)}>删除</button>
-                              <button onClick={(event) => { event.stopPropagation(); }}>收藏</button>
+                              <button onClick={(event) => { event.stopPropagation(); console.log(book.fav); handleCollectBook(book.id, !bookCovers[item.id]['fav']); }}>收藏</button>
                             </div>
                           )}
                         </div>
@@ -83,13 +63,18 @@ const Bookshelf = ({ books, bookCovers, bookshelfSettings }) => {
                 itemLayout="horizontal"
                 dataSource={books}
                 renderItem={(item, index) => (
-                  <List.Item onClick={() => { handleClickBook(item); handleHideSiderBar(true); }}
+                  <List.Item onClick={() => { handleClickBook(item); }}
                     actions={[
                       <Button onClick={(event) => { event.stopPropagation(); handleDeleteBook(item.id) }}>删除书籍</Button>,
-                      <span style={{ fontSize: "20px" }}><StarFilled onClick={(event) => { event.stopPropagation(); }} /></span>
+                      <span style={{ fontSize: "20px" }}>
+                        <StarFilled style={{color: bookCovers[item.id]['fav'] ? 'red' : undefined}} onClick={(event) => { 
+                          event.stopPropagation(); 
+                          handleCollectBook(item.id, !bookCovers[item.id]['fav']);
+                          }} />
+                      </span>
                     ]}>
                     <List.Item.Meta
-                      avatar={<Avatar src={bookCovers[item.id]} />}
+                      avatar={<Avatar src={bookCovers[item.id]['url']} />}
                       title={item.name}
                       description={`${item.file_type.toUpperCase()} · ${formatFileSize(item.size)}`}
                     />

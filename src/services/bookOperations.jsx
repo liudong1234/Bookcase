@@ -34,6 +34,11 @@ export const bookOperations = {
 
   // 获取指定ID的书籍
   getBook: async (bookId) => {
-    return invoke('get_book', { book_id: bookId });
+    return invoke('get_book', { bookId: bookId });
+  },
+
+  //收藏书籍
+  collectBook: async (bookId, fav) => {
+    await invoke('collect_book', {bookId: bookId, fav: fav});
   }
 };

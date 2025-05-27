@@ -1,6 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import Bookshelf from "./Bookshelf";
+import CollectionFav from './CollectionFav';
+
 const ContentView = ({ books, bookCovers, bookshelfSettings, selectedMenu }) => {
+  const { handleSelectedBook } = bookshelfSettings;
   return (
     <>
       {selectedMenu === "1" &&
@@ -10,7 +13,9 @@ const ContentView = ({ books, bookCovers, bookshelfSettings, selectedMenu }) => 
           bookshelfSettings={bookshelfSettings}
         />
       }
-      {selectedMenu === "2" && <h2>收藏</h2>}
+      {selectedMenu === "2" && 
+        <CollectionFav handleSelectedBook={handleSelectedBook} bookCovers={bookCovers} />
+      }
       {selectedMenu === "3" && <h2>笔记</h2>}
     </>
   )

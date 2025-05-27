@@ -5,7 +5,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: var(--dynamic-bg-url, url("/cover.png"));
+  background-image: var(--dynamic-bg-url, url(""));
   background-size: cover;
   background-attachment: fixed;
   opacity: 0.5; /* 透明度 50% */
@@ -41,6 +41,7 @@
   /* z-index: 99; */
   align-items: center; 
   justify-content: flex-end;
+  box-shadow: 0 4px 10px rgba(118, 184, 223, 0.2);
 }
 .settting-span {
   font-weight: bold;

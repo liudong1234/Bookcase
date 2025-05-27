@@ -19,6 +19,8 @@
     "@tauri-apps/plugin-fs": "^2.0.0",
     "@tauri-apps/plugin-os": "^2.2.1",
     "@tauri-apps/plugin-shell": "^2.2.1",
+    "@use-gesture/react": "^10.3.1",
+    "@yudiel/react-qr-scanner": "^2.2.1",
     "antd": "^5.23.2",
     "daisyui": "^4.12.23",
     "epubjs": "^0.3.93",
@@ -26,6 +28,7 @@
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.3",
     "react-reader": "^2.0.12",
+    "react-spring": "^9.7.5",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1"
   },

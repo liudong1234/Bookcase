@@ -10,9 +10,8 @@ import {
 
 const { Sider } = Layout;
 
-const SideBar = ({ handleSelectedMenu }) => {
+const SideBar = ({ menuNum, handleSelectedMenu }) => {
   const [collapsed, setCollapsed] = useState(false);
-
   const toggleCollapsed = () => {
     setCollapsed(!collapsed);
   };
@@ -28,7 +27,7 @@ const SideBar = ({ handleSelectedMenu }) => {
       >
         <Menu
           mode="inline"
-          defaultSelectedKeys={["1"]}
+          defaultSelectedKeys={menuNum}
           onClick={handleSelectedMenu}
           items={[
             {

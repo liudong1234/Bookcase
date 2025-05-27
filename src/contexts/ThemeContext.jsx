@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useMemo } from 'react';
+import { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { ConfigProvider, theme as antdTheme } from 'antd';
 
 const defaultThemeConfig = {
@@ -30,10 +30,48 @@ const defaultThemeConfig = {
 
 const ThemeContext = createContext();
 
+
+// 读取 LocalStorage 中的主题配置
+const loadThemeFromStorage = () => {
+  try {
+    const saved = localStorage.getItem('themeConfig');
+    return saved ? JSON.parse(saved) : null;
+  } catch (error) {
+    console.error('读取主题配置失败:', error);
+    return null;
+  }
+};
+
+// 保存主题配置到 LocalStorage
+const saveThemeToStorage = (config) => {
+  try {
+    localStorage.setItem('themeConfig', JSON.stringify(config));
+  } catch (error) {
+    console.error('保存主题配置失败:', error);
+  }
+};
+
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(false);
-  const [bgImage, setBgImage] = useState(false);
-  const [customConfig, setCustomConfig] = useState({});
+
+  const savedConfig = loadThemeFromStorage();
+
+  const [isDark, setIsDark] = useState(savedConfig?.isDark || false);
+  const [bgImage, setBgImage] = useState(savedConfig?.bgImage || false);
+  const [colorText, setColorText] = useState(savedConfig?.colorText || '');
+  const [bgColor, setBgColor] = useState(savedConfig?.bgColor || '')
+  const [customConfig, setCustomConfig] = useState(savedConfig?.customConfig || {});
+
+  useEffect(() => {
+    const currentConfig = {
+      isDark,
+      bgImage,
+      bgColor,
+      colorText,
+      customConfig
+    };
+    saveThemeToStorage(currentConfig);
+  }, [isDark, bgImage, bgColor, colorText, customConfig]);
+
   // 生成 Ant Design 主题配置
   const antdThemeConfig = useMemo(() => {
     // 基础配置
@@ -41,18 +79,19 @@ export const ThemeProvider = ({ children }) => {
       algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
       token: {
         ...defaultThemeConfig.token,
-        colorText: isDark ? '#ffffff' : '#333333',
+        colorText: isDark ? '#ffffff' : (colorText ? colorText : '#333333'),
+        colorBgBase: isDark ? '333333' : (bgColor ? bgColor : '#ffffff'),
       },
       components: {
         Layout: {
-          headerBg: !bgImage ? (isDark ? '#000000' : '#efefef') : undefined,
-          colorBgLayout: !bgImage ? (isDark ? '#000000' : '#f5f5f5') : undefined,
-          siderBg: !bgImage ? (isDark ? '#000000' : '#efefef') : undefined,
-          lightSiderBg: !bgImage ? (isDark ? '#000000' : '#ffffff') : undefined,
-          footerBg: !bgImage ? (isDark ? '#000000' : '#f8f8f8') : undefined,
+          headerBg: !bgImage ? (isDark ? '#000000' : bgColor ? bgColor : '#efefef') : undefined,
+          colorBgLayout: !bgImage ? (isDark ? '#000000' : bgColor ? bgColor : '#f5f5f5') : undefined,
+          siderBg: !bgImage ? (isDark ? '#000000' : bgColor ? bgColor : '#efefef') : undefined,
+          lightSiderBg: !bgImage ? (isDark ? '#000000' : bgColor ? bgColor : '#ffffff') : undefined,
+          footerBg: !bgImage ? (isDark ? '#000000' : bgColor ? bgColor : '#f8f8f8') : undefined,
         },
         Menu: {
-          itemBg: !bgImage ? (isDark ? '#000000' : '#ffffff') : undefined,
+          itemBg: !bgImage ? (isDark ? '#000000' : bgColor ? bgColor : '#ffffff') : undefined,
         }
       }
     };
@@ -79,15 +118,19 @@ export const ThemeProvider = ({ children }) => {
     isDark,
     bgImage,
     themeConfig: antdThemeConfig,
-    
+    bgColor,
+    colorText,
+
     // 操作方法
     toggleDarkMode: () => setIsDark(!isDark),
     setBackgroundImage: (useImage) => setBgImage(useImage),
+    setBackgroundColor: (color) => setBgColor(color),
+    setTextColor: (color) => setColorText(color),
     updateThemeConfig: (config) => {
       setCustomConfig(prev => ({ ...prev, ...config }));
     },
     resetThemeConfig: () => setCustomConfig({})
-  }), [isDark, bgImage, antdThemeConfig]);
+  }), [isDark, bgImage, antdThemeConfig, bgColor, colorText]);
 
   return (
     <ThemeContext.Provider value={contextValue}>

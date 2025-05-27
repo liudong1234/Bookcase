@@ -18,6 +18,7 @@ import { bookOperations } from "./services/BookOperations";
 import Settings from "./components/Settings";
 import { pluginManager } from "./plugins/PluginManager";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import FileTransfer from "./components/FileTransfer";
 
 import "./App.css";
 const LazyBookReader = React.lazy(() => import("./components/BookReader"));
@@ -41,7 +42,7 @@ const App = () => {
       // debugger;
       const booksFromDB = await bookOperations.getAllBooks();
 
-      const covers = {};
+      let covers = {};
       for (const book of booksFromDB) {
         const coverName = await bookOperations.getCover(book.id);
         if (coverName !== "" && coverName !== null) {
@@ -56,7 +57,11 @@ const App = () => {
           const blob = new Blob([new Uint8Array(fileBytes)], {
             type: coverName, // 根据文件扩展名获取 MIME 类型
           });
-          covers[book.id] = URL.createObjectURL(blob);
+          covers[book.id] = {
+            name: book.name,
+            url: URL.createObjectURL(blob),
+            fav: booksFromDB.find(b => b.id == book.id).fav
+          };
         }
       }
       setBooks(booksFromDB);
@@ -74,12 +79,17 @@ const App = () => {
     loadData();
   }, [result]);
 
+  useEffect(() => {
+    if (selectedBook) {
+      setSiderBarHidden(true);
+    }else {
+      setSiderBarHidden(false);
+    }
+  }, [selectedBook])
   const changeBookshelfStyle = () => {
     setBookshelfStyle(!bookshelfStyle); //false格子， true列表
   };
-  const handleHideSiderBar = (value) => {
-    setSiderBarHidden(value);
-  };
+
   const handleDeleteBook = async (bookId) => {
     try {
       setBooks((prev) => prev.filter((b) => b.id !== bookId));
@@ -94,6 +104,14 @@ const App = () => {
       message.error(error);
     }
   };
+  const handleCollectBook = async (bookId, newFav) => {
+    try {
+      updateBookCovers(bookId, newFav);
+      bookOperations.collectBook(bookId, newFav);
+    }catch (error) {
+      message.error(error);
+    }
+  }
   const handleResult = () => {
     setResult(!result);
   };
@@ -103,6 +121,16 @@ const App = () => {
   const handleSelectedBook = (book) => {
     setSelectedBook(book);
   };
+
+  const updateBookCovers = (bookId, newFav) => {
+    setBookCovers(prev => ({
+      ...prev,                // 复制其他书籍数据
+      [bookId]: {             // 更新目标书籍的 fav
+        ...prev[bookId],      // 保留原有 url 等属性
+        fav: newFav
+      }
+    }));
+  }
 
   return (
     <ThemeProvider>
@@ -114,6 +142,9 @@ const App = () => {
           <Header className="app-header">
             <h1>Bookcase📚</h1>
             <div style={{ display: "flex", alignItems: "center", gap: "30px" }}>
+              <div>
+                <FileTransfer />
+              </div>
               <div>
                 <CustomUpload books={books} onResult={handleResult} />
               </div>
@@ -127,14 +158,14 @@ const App = () => {
         )}
         {!siderBarHidden && (
           <Layout>
-            <SideBar handleSelectedMenu={handleSelectedMenu} />
+            <SideBar menuNum={selectedMenu} handleSelectedMenu={handleSelectedMenu} />
             <ContentView
               books={books}
               bookCovers={bookCovers}
               bookshelfSettings={{
-                handleHideSiderBar,
                 handleDeleteBook,
                 handleSelectedBook,
+                handleCollectBook,
                 bookshelfStyle,
               }}
               selectedMenu={selectedMenu}
@@ -172,7 +203,6 @@ const App = () => {
               book={selectedBook}
               onClose={() => {
                 setSelectedBook(null);
-                setSiderBarHidden(false);
               }}
             />
           </Suspense>

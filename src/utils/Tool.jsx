@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { appDataDir } from '@tauri-apps/api/path';
+import { readFile, BaseDirectory } from "@tauri-apps/plugin-fs";
+import { getMimeType } from './FileDetector';
 const InvertColor = (hexColor) => {
   // 去掉 # 前缀
   hexColor = hexColor.replace(/^#/, '');
@@ -96,6 +98,26 @@ export const useScrollNavigation = (containerRef, options = {}) => {
   }, [containerRef, options.step, options.smooth]);
 };
 
+export const loadFile = async (book) => {
+try {
+      const filePath = 'data\\' + book.id + '\\' + book.name;
+      const fileBytes = await readFile(filePath, { baseDir: BaseDirectory.AppData });
+
+      // 从路径中提取文件名
+      const filename = filePath.split(/[/\\]/).pop();
+
+      // 创建 Blob 对象
+      const blob = new Blob([new Uint8Array(fileBytes)], {
+        type: getMimeType(filename) // 根据文件扩展名获取 MIME 类型
+      });
+
+      // 创建 File 对象
+      return (new File([blob], filename, { type: blob.type }));
+    } catch (error) {
+      console.error('转换文件失败:', error);
+      throw error;
+    }
+}
 
 export const directory = await appDataDir();
 export default InvertColor;

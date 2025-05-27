@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Dropdown, Space, Drawer, Popover, message,
   Checkbox, Button, Modal, Input, ColorPicker,
-  Upload, Row, Flex, Image, Radio
+  Upload, Row, Flex, Image, Radio, Segmented,
 } from "antd";
 import { SettingTwoTone, SettingFilled, ToolTwoTone, FolderTwoTone, UploadOutlined, LineChartOutlined, DotChartOutlined, BarChartOutlined, PieChartFilled } from '@ant-design/icons'
 // import { open } from '@tauri-apps/plugin-dialog';
@@ -42,18 +42,17 @@ const items = [
   },
 ];
 const DEFAULT_COLOR = [
-  {
-    color: 'rgb(16, 142, 233)',
-    percent: 0,
-  },
-  {
-    color: 'rgb(135, 208, 104)',
-    percent: 100,
-  },
+  { name: '初始', bgc: undefined, tc: undefined},
+  { name: '经典浅色模式', bgc: '#F9F9F9', tc: '#333333', },
+  { name: '深色模式', bgc: '#1A1A1A', tc: '#E0E0E0', },
+  { name: '护眼豆沙绿', bgc: '#C7EDCC', tc: '#2A312A', },
+  { name: '羊皮纸复古风', bgc: '#F0E6D6', tc: '#4A3F35', },
+  { name: '深蓝夜读', bgc: '#2B3A4A', tc: '#D9D9D9', },
+  { name: '柔光模式', bgc: '#F5F5F5', tc: '#4A4A4A', },
 ];
 
 
-const Settings = ({onUpdate}) => {
+const Settings = ({ onUpdate }) => {
   const [openDrawer, setOpenDrawer] = useState(false);
   const [openPluginModal, setOpenPluginModal] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -61,10 +60,11 @@ const Settings = ({onUpdate}) => {
   const [bgList, setBgList] = useState([]);
   const { setBgUrl } = onUpdate;
   const [textAreas, setTextAreas] = useState([]);
-  const { bgImage, setBackgroundImage } = useTheme();
+  const { bgImage, setBackgroundImage, colorText, setTextColor, bgColor, setBackgroundColor } = useTheme();
   const { themeConfig, updateThemeConfig } = useTheme();
   const [primaryColor, setPrimaryColor] = useState(themeConfig.token.colorPrimary);
-
+  const [colorType, setColorType] = useState('预设');
+  const [selectedColor, setSelectedColor] = useState(null); // 新增选中状态
   const showDrawer = () => {
     setOpenDrawer(true);
   };
@@ -181,7 +181,7 @@ const Settings = ({onUpdate}) => {
     setTimeout(() => {
       setOpenCommonSettingsModal(false);
       setConfirmLoading(false);
-      updateThemeConfig({token: {colorPrimary: primaryColor}});
+      updateThemeConfig({ token: { colorPrimary: primaryColor } });
     }, 2000);
   }
   const handleCommonSettingsModalCancel = () => {
@@ -267,7 +267,7 @@ const Settings = ({onUpdate}) => {
 
   const [value, setValue] = useState(1);
   const onChange = e => {
-    const value = e.target.value; 
+    const value = e.target.value;
     setValue(value);
     for (const item of bgList) {
       if (item.name === value) {
@@ -387,68 +387,104 @@ const Settings = ({onUpdate}) => {
           xxl: "40%",
         }}
       >
-        <p style={{ fontSize: '15px', fontWeight: "bold" }}>主题颜色配置</p>
+        <p style={{ fontSize: '15px', fontWeight: "bold" }}>颜色配置</p>
+        <Segmented
+          default={colorType}
+          options={['预设', '主题色', '文本色', '背景色']}
+          onChange={value => {
+            setColorType(value);
+          }}
+          block
+        >
+        </Segmented>
         <Space direction="vertical">
-          <Space>
-            <Popover content={"主体颜色"}>品牌色</Popover>
-            <ColorPicker
-              defaultValue={primaryColor}
-              allowClear
-              showText
-              mode={['single', 'gradient']}
-              onChangeComplete={(color) => {
-                console.log(color.toCssString());
-                setPrimaryColor(color.toHex());
-              }}
-            />
-          </Space>
-          <Popover content={"应用在界面的文字、背景、边框和填充"} >
-            中性色
-          </Popover>
-          <Space style={{ paddingLeft: "18px" }}>
-            <span>文本</span>
-            <ColorPicker
-              defaultValue={"black"}
-              allowClear
-              showText
-              mode='single'
-              onChangeComplete={(color) => {
-                console.log(color.toCssString());
-              }}
-            />
-          </Space>
-          <Space style={{ paddingLeft: "18px" }}>
-            <span>背景</span>
-            <Checkbox onChange={onChangeColorImg}>图片</Checkbox>
-            {
-              !bgImage &&
+          {colorType === '预设' && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 8}}>
+              {
+                DEFAULT_COLOR.map((colors, index) => (
+                  <Popover content={colors.name} key={index}>
+                    <Button
+                      shape="circle"
+                      style={{ background: colors.bgc, color: colors.tc, border: selectedColor === colors.name ? '1px solid red' : 'none' }}
+                      onClick={() => {
+                        setSelectedColor(colors.name); // 更新选中状态
+                        if (colors.name === "初始") {
+                          setBackgroundImage(false);
+                        }
+                        setBackgroundColor(colors.bgc);
+                        setTextColor(colors.tc);
+                      }}
+                    />
+                  </Popover>
+                ))
+              }
+            </div>)
+          }
+          {colorType === '主题色' && (
+            <Space style={{marginTop: 8}}>
+              <Popover content={"主体颜色"}>品牌色</Popover>
               <ColorPicker
-                defaultValue={DEFAULT_COLOR}
+                defaultValue={primaryColor}
                 allowClear
                 showText
                 mode={['single', 'gradient']}
                 onChangeComplete={(color) => {
                   console.log(color.toCssString());
+                  setPrimaryColor(color.toHex());
                 }}
               />
-            }
-            {
-              bgImage &&
-              <Upload
-                customRequest={handleUpload}
-                showUploadList={false}
-                accept="image/png, image/jpeg, image/gif, image/webp"
-                beforeUpload={beforeUpload}
-                style={{ width: "50px" }}
-              >
-                <Popover content={"以图片名保存"} >
-                  <Button type="primary" icon={<UploadOutlined />}>
-                    上传
-                  </Button>
-                </Popover>
-              </Upload>
-            }
-          </Space>
+            </Space>)
+          }
+          {colorType === '文本色' && (
+            <Space style={{marginTop: 8}}>
+              <span>文本色</span>
+              <ColorPicker
+                defaultValue={colorText}
+                allowClear
+                showText
+                mode='single'
+                onChangeComplete={(color) => {
+                  console.log(color.toCssString());
+                  setTextColor(color.toHex());
+                }}
+              />
+            </Space>)
+          }
+          {colorType === '背景色' && (
+            <Space style={{marginTop: 8}}>
+              <span>组件背景色</span>
+              <Checkbox onChange={onChangeColorImg}>图片</Checkbox>
+              {
+                !bgImage &&
+                <ColorPicker
+                  defaultValue={bgColor}
+                  allowClear
+                  showText
+                  mode={'single'}
+                  onChangeComplete={(color) => {
+                    console.log(color.toCssString());
+                    setBackgroundColor(color.toCssString());
+                  }}
+                />
+              }
+              {
+                bgImage &&
+                <Upload
+                  customRequest={handleUpload}
+                  showUploadList={false}
+                  accept="image/png, image/jpeg, image/gif, image/webp"
+                  beforeUpload={beforeUpload}
+                  style={{ width: "50px" }}
+                >
+                  <Popover content={"以图片名保存"} >
+                    <Button type="primary" icon={<UploadOutlined />}>
+                      上传
+                    </Button>
+                  </Popover>
+                </Upload>
+              }
+            </Space>)
+          }
           {
             bgImage &&
             <>
@@ -456,17 +492,16 @@ const Settings = ({onUpdate}) => {
                 onChange={onChange}
                 value={value}
                 key={0}
-                >
-                  {bgList.map((img) => (
-                    <Radio value={img.name} key={img.id}>
-                      <Image width={80} src={img.url} alt={img.name} preview={false} />
-                    </Radio>
-                  ))}
-                </Radio.Group>
+              >
+                {bgList.map((img) => (
+                  <Radio value={img.name} key={img.id}>
+                    <Image width={80} src={img.url} alt={img.name} preview={false} />
+                  </Radio>
+                ))}
+              </Radio.Group>
               <Flex wrap gap="small">
               </Flex>
             </>
-
           }
         </Space>
       </Modal>

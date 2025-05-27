@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Drawer, Button } from "antd";
+import { Button } from "antd";
 import { Content, Header } from "antd/es/layout/layout";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import ReactMarkdown from "react-markdown";
@@ -8,32 +8,23 @@ import rehypeRaw from 'rehype-raw';
 import { theme } from 'antd';
 import { useScrollNavigation } from "../../utils/Tool";
 const { useToken } = theme;
-
-import MenuTocItem, { getItemKey } from "./MenuTocItem";
+import { useTheme } from "../../contexts/ThemeContext";
+import CustomDrawer from "../CustomDrawer";
 import ReaderToolbar from "./ReaderToolBar";
 import SettingsModal from "./SettingsModal";
+
 const MarkdownRenderer = ({
   book,
   onLeftCloseHandler,
   viewerRef,
-  customThemeHandler,
 }) => {
   const [currentChapter, setCurrentChapter] = useState('');
   const [markdownContent, setMarkdownContent] = useState(''); // Changed to string
-  const [readerTheme, setReaderTheme] = useState('light');
   const [toolBar, setToolBar] = useState(true)
   const { token } = useToken();
-
+  const { isDark, toggleDarkMode } = useTheme();
   const scrollTimeout = useRef(null)
-  const updateTheme = (value) => {
-    setReaderTheme(value);
-    if (value == "dark"){
-      customThemeHandler(true);
-    }
-    else{
-      customThemeHandler(false);
-    }
-  }
+
   const [readerState, setReaderState] = useState({
     currentLocation: null,
     toc: [],
@@ -179,7 +170,7 @@ const MarkdownRenderer = ({
     if (markdownRef.current) {
       markdownRef.current.style.color = token.colorText;
     }
-  }, [readerTheme])
+  }, [isDark])
 
   useEffect(() => {
     if (book instanceof File) {
@@ -384,7 +375,7 @@ const MarkdownRenderer = ({
             padding: '0.2em 0.4em',
             margin: 0,
             fontSize: '85%',
-            backgroundColor: readerTheme === "light" ? '#f6f8fa' : '#2f3542',
+            backgroundColor: isDark === false ? '#f6f8fa' : '#2f3542',
             borderRadius: '3px'
           }}
           {...props}
@@ -397,7 +388,7 @@ const MarkdownRenderer = ({
             overflow: 'auto',
             fontSize: '85%',
             lineHeight: '1.45',
-            backgroundColor: readerTheme === "light" ? '#f6f8fa' : '#2f3542',
+            backgroundColor: isDark === false ? '#f6f8fa' : '#2f3542',
             borderRadius: '3px'
           }}
           {...props}
@@ -504,11 +495,9 @@ const MarkdownRenderer = ({
             {book?.name}
           </h3>
           <ReaderToolbar
-            readerTheme={readerTheme}
             navigationHandlers={navigationHandlers}
             onSettingsClick={() => updateUiState('openSettings', true)}
             onTocClick={() => updateUiState('openToc', true)}
-            onThemeToggle={() => updateTheme(readerTheme === 'light' ? 'dark' : 'light')}
           />
         </Header>
 
@@ -529,30 +518,14 @@ const MarkdownRenderer = ({
           </div>
         </div>
       </Content>
-      <Drawer
-        className="my-toc-drawer"
-        title="目录"
-        placement="left"
-        open={uiState.openToc}
-        onClose={() => handleTocClose()}
-        width={300}
-      >
-        <div
-          className="toc-list"
-        >
-          {readerState.toc.map((item, index) => (
-            <MenuTocItem
-              key={getItemKey(item)}
-              readerTheme={readerTheme}
-              item={item}
-              tocSelectHandler={navigationHandlers.handleTocSelect}
-              currentChapter={currentChapter}
-              level={item.level}
-              allTocItems={readerState.toc}
-            />
-          ))}
-        </div>
-      </Drawer>
+
+      <CustomDrawer 
+        toc={readerState.toc}
+        currentChapter={currentChapter}
+        openToc={uiState.openToc}
+        onClose={handleTocClose}
+        onSelect={navigationHandlers.handleTocSelect}
+      />
       <SettingsModal
         open={uiState.openSettings}
         settings={readerSettings}

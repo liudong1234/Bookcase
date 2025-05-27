@@ -1,6 +1,9 @@
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 mod db;
-// mod file;
+mod server;
+
+
+use server::start_http_server;
 use db::{Book, Database};
 use directories::{BaseDirs, ProjectDirs};
 use std::fs::{self, OpenOptions};
@@ -9,12 +12,11 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{command, State};
-
 struct AppState {
     db: Mutex<Database>,
 }
 
-fn get_appdata_dir() -> PathBuf {
+pub fn get_appdata_dir() -> PathBuf {
     let proj_dirs = ProjectDirs::from("com", "", "Bookcase").expect("未找到应用程序目录");
     proj_dirs.data_dir().to_path_buf()
 }
@@ -57,6 +59,17 @@ async fn get_cover(book_id: String, state: State<'_, AppState>) -> Result<Option
         .map_err(|e| e.to_string())?;
 
     Ok(cover_result)
+}
+
+#[command]
+async fn collect_book(book_id: String, fav: bool, state: State<'_, AppState>) -> Result<(), String> {
+    let collect_result = state
+        .db
+        .lock()
+        .unwrap()
+        .update_favbook(&book_id, fav)
+        .map_err(|e| e.to_string())?;
+    Ok(collect_result)
 }
 
 #[command]
@@ -178,6 +191,7 @@ fn upload_bg_img(pic: Vec<u8>, file_name: &str) -> Result<bool, String> {
 }
 
 pub fn run() {
+    start_http_server();
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
@@ -196,6 +210,7 @@ pub fn run() {
             upload_file_chunk,
             create_plugindir,
             upload_bg_img,
+            collect_book,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

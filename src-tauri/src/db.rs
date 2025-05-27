@@ -10,6 +10,7 @@ pub struct Book {
     pub last_modified: u64,
     pub file_path: String,
     pub has_cover: bool,
+    pub fav: bool,
 }
 
 #[warn(dead_code)]
@@ -30,7 +31,8 @@ impl Database {
         file_type text not null,
         last_modified integer not null,
         file_path text not null,
-        has_cover boolean not null default 0
+        has_cover boolean not null default 0,
+        fav boolean not null default 0
       )",
             [],
         )?;
@@ -50,7 +52,7 @@ impl Database {
 
     pub fn get_book_by_id(&self, book_id: &str) -> Result<Option<Book>> {
         let mut stmt = self.conn.prepare(
-        "select id, name, size, file_type, last_modified, metadata, file_path, has_cover from books where id=?1"
+        "select id, name, size, file_type, last_modified, file_path, has_cover, fav from books where id=?1"
       )?;
 
         let mut books = stmt.query_map([book_id], |row| {
@@ -62,6 +64,7 @@ impl Database {
                 last_modified: row.get(4)?,
                 file_path: row.get(5)?,
                 has_cover: row.get(6)?,
+                fav: row.get(7)?,
             })
         })?;
         Ok(books.next().transpose()?)
@@ -69,7 +72,7 @@ impl Database {
 
     pub fn get_books(&self) -> Result<Vec<Book>> {
         let mut stmt = self.conn.prepare(
-            "select id, name, size, file_type, last_modified, file_path, has_cover from books",
+            "select id, name, size, file_type, last_modified, file_path, has_cover, fav from books",
         )?;
 
         let books = stmt.query_map([], |row| {
@@ -81,6 +84,7 @@ impl Database {
                 last_modified: row.get(4)?,
                 file_path: row.get(5)?,
                 has_cover: row.get(6)?,
+                fav: row.get(7)?,
             })
         })?;
         books.collect()
@@ -119,8 +123,8 @@ impl Database {
         //保存书籍信息
         tx.execute(
             "insert or replace into books(
-        id, name, size, file_type, last_modified, file_path, has_cover
-      ) values(?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        id, name, size, file_type, last_modified, file_path, has_cover, fav
+      ) values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             (
                 &book.id,
                 &book.name,
@@ -129,6 +133,7 @@ impl Database {
                 book.last_modified,
                 &book.file_path,
                 book.has_cover,
+                book.fav
             ),
         )?;
         //提交事务
@@ -148,6 +153,14 @@ impl Database {
     pub fn delete_book(&self, book_id: &str) -> Result<()> {
         self.conn
             .execute("delete from books where id = ?1", [book_id])?;
+        Ok(())
+    }
+
+    pub fn update_favbook(&self, book_id: &str, fav: bool) -> Result<()> {
+        self.conn.execute(
+            "update books set fav = ?1 WHERE id = ?2",
+            (fav, book_id),
+        )?;
         Ok(())
     }
 }

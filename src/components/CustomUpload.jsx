@@ -119,6 +119,7 @@ const CustomUpload = ({books, onResult}) => {
           if (coverType === '') {
             coverType = 'image/jpg';
           }
+          let fav = false;
           // 存储书籍数据
           const bookData = {
             id: bookId,
@@ -127,7 +128,8 @@ const CustomUpload = ({books, onResult}) => {
             file_type: type,
             last_modified: file.lastModified,
             file_path: lastPath,
-            has_cover: has_cover
+            has_cover: has_cover,
+            fav: fav,
           };
 
           await bookOperations.saveBook(bookData);

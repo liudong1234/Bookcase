@@ -6,7 +6,7 @@ const ThemeSwitcher = () => {
     const { isDark, toggleDarkMode } = useTheme();
   
     return (
-    <div className="theme-toggle">
+    <div style={{marginTop: 5}}>
         <Switch
           checked={isDark}
           onChange={toggleDarkMode}

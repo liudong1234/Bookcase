@@ -1,24 +1,21 @@
 import { useState, useRef, useEffect } from "react";
-import { Drawer, Button } from "antd";
+import { Button } from "antd";
 import { Content, Header } from "antd/es/layout/layout";
 import Epub from "epubjs";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 
 import ReaderToolbar from "./ReaderToolBar";
 import SettingsModal from "./SettingsModal";
-import MenuTocItem from "./MenuTocItem";
-import { getItemKey } from "./MenuTocItem";
 import ReadingIndicator from "../../utils/ReadingIndicator";
-
+import CustomDrawer from "../CustomDrawer";
 import { theme } from 'antd';
 import { useKeyboardNavigation, useScrollNavigation } from "../../utils/Tool";
 const { useToken } = theme;
-
+import { useTheme } from "../../contexts/ThemeContext";
 const EpubRenderer = ({
   book,
   onLeftCloseHandler,
   viewerRef,
-  customThemeHandler,
 }) => {
   // Local state
 
@@ -26,8 +23,8 @@ const EpubRenderer = ({
   const [totalChapters, setTotalChapters] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [toolBar, setToolBar] = useState(true);
-  const [readerTheme, setReaderTheme] = useState('light');
   const { token } = useToken();
+  const { isDark } = useTheme();
   // Reader state
   const [readerState, setReaderState] = useState({
     currentLocation: null,
@@ -64,9 +61,7 @@ const EpubRenderer = ({
           spread: "none",
           flow: readerSettings.readingMode,
           manager: readerSettings.managerMode,
-          iframe: {
-            allowScripts: true, // 允许执行脚本
-          }
+          allowScriptedContent:true,
         });
 
         // Notify parent about rendition
@@ -83,36 +78,34 @@ const EpubRenderer = ({
         rendition.on('rendered', (section) => {
           // Get all iframes (there could be multiple in continuous mode)
           const iframes = viewerRef.current.querySelectorAll('iframe');
-          
+
           // Attach click handler to each iframe's document
           iframes.forEach(iframe => {
             if (iframe && iframe.contentDocument) {
               const iframeDocument = iframe.contentDocument;
-              
+
               // Remove any existing click listeners to prevent duplicates
               const oldHandler = iframe._clickHandler;
               if (oldHandler) {
                 iframeDocument.removeEventListener('click', oldHandler);
               }
-              
-              // Create and store a new click handler
+
               const clickHandler = (event) => {
                 const selection = iframeDocument.getSelection();
                 if (selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed) {
-                  return; // Don't toggle toolbar if text is selected
+                  return; 
                 }
                 setToolBar(prev => !prev);
+                window.focus();
               };
-              
               // Store the handler reference for potential cleanup
               iframe._clickHandler = clickHandler;
-              
+
               // Add the event listener
               iframeDocument.addEventListener('click', clickHandler);
             }
           });
         });
-
         // Apply theme settings
         applyThemeSettings(rendition);
 
@@ -128,7 +121,7 @@ const EpubRenderer = ({
       return () => {
         if (bookRef.current) {
           bookRef.current.destroy();
-          
+
           // Clean up any remaining event handlers
           const iframes = viewerRef.current?.querySelectorAll('iframe');
           if (iframes) {
@@ -156,7 +149,7 @@ const EpubRenderer = ({
     if (bookRef.current?.rendition) {
       applyThemeSettings(bookRef.current.rendition);
     }
-  }, [readerSettings.fontSize, readerSettings.fontFamily, readerTheme]);
+  }, [readerSettings.fontSize, readerSettings.fontFamily, isDark]);
 
   useEffect(() => {
     if (bookRef.current?.rendition) {
@@ -201,15 +194,6 @@ const EpubRenderer = ({
     onLeftClose: onLeftCloseHandler,
   };
 
-  const updateTheme = (value) => {
-    setReaderTheme(value);
-    if (value == "dark"){
-      customThemeHandler(true);
-    }
-    else{
-      customThemeHandler(false);
-    }
-  }
 
   const updateSettings = (key, value) => {
     setReaderSettings(prev => ({
@@ -252,7 +236,7 @@ const EpubRenderer = ({
         "color": token.colorText,
         "line-height": `${readerSettings.lineHeight} !important`
       },
-      
+
     });
   };
 
@@ -305,7 +289,6 @@ const EpubRenderer = ({
       updateUiState('openToc', false);
     }
   };
-
   useKeyboardNavigation(navigationHandlers.handlePrevPage, navigationHandlers.handleNextPage);
   useScrollNavigation(viewerRef, 100);
   return (
@@ -326,11 +309,9 @@ const EpubRenderer = ({
             {book?.name}
           </h3>
           <ReaderToolbar
-            readerTheme={readerTheme}
             navigationHandlers={navigationHandlers}
             onSettingsClick={() => updateUiState('openSettings', true)}
             onTocClick={() => updateUiState('openToc', true)}
-            onThemeToggle={() => updateTheme(readerTheme === 'light' ? 'dark' : 'light')}
           />
         </Header>
       )}
@@ -338,42 +319,19 @@ const EpubRenderer = ({
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10 }}>
           <ReadingIndicator currentPage={currentPage} totalPages={totalChapters} />
         </div>
-        <div ref={viewerRef} style={{ width: "100%", height: "100%" }}>
+        <div
+          ref={viewerRef}
+          style={{ width: "100%", height: "100%" }}>
           {/* EPUB 内容将在此处渲染 */}
         </div>
       </Content>
-      <Drawer
-        title="目录"
-        placement="left"
-        open={uiState.openToc}
-        onClose={() => handleTocClose()}
-        width={300}
-        styles={{
-          background: readerTheme === "light" ? "#fff" : "#1f1f1f",
-        }}
-        className="my-toc-drawer"
-      >
-        <div
-          className="toc-list"
-          style={{
-            height: "100%",
-            overflow: "auto",
-            // background: readerTheme === "light" ? "#fff" : "#1f1f1f",
-          }}
-        >
-          {readerState.toc.map((item, index) => (
-            <MenuTocItem
-              key={getItemKey(item)}
-              readerTheme={readerTheme}
-              item={item}
-              tocSelectHandler={navigationHandlers.handleTocSelect}
-              currentChapter={currentChapter} level={0}
-              allTocItems={readerState.toc}
-            />
-          ))}
-        </div>
-      </Drawer>
-
+      <CustomDrawer
+        toc={readerState.toc}
+        currentChapter={currentChapter}
+        openToc={uiState.openToc}
+        onClose={handleTocClose}
+        onSelect={navigationHandlers.handleTocSelect}
+      />
       <SettingsModal
         open={uiState.openSettings}
         settings={readerSettings}
