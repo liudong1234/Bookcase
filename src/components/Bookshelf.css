@@ -8,7 +8,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 20px;
-    padding: 20px;
+    padding: 5px;
 }
 
 .book-card {
@@ -92,7 +92,15 @@
 
 .bookshelf-booklist {
     padding-left: 15px;
-    cursor: pointer;
+    padding-right: 15px;
+    /* cursor: pointer; */
+    .ant-list-header {
+        padding-block: 0%;
+    }
+}
+.bookshelf-bookgrid {
+    padding-left: 15px;
+    padding-right: 15px;
 }
 
 .ant-list-item {

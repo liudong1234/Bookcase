@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Bookshelf from "./Bookshelf";
 import CollectionFav from './CollectionFav';
-
+import WordDisplay from './Notes'
 const ContentView = ({ books, bookCovers, bookshelfSettings, selectedMenu }) => {
   const { handleSelectedBook } = bookshelfSettings;
   return (
@@ -16,7 +16,9 @@ const ContentView = ({ books, bookCovers, bookshelfSettings, selectedMenu }) => 
       {selectedMenu === "2" && 
         <CollectionFav handleSelectedBook={handleSelectedBook} bookCovers={bookCovers} />
       }
-      {selectedMenu === "3" && <h2>笔记</h2>}
+      {selectedMenu === "3" && 
+        <WordDisplay />
+      }
     </>
   )
 }

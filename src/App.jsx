@@ -163,6 +163,7 @@ const App = () => {
               books={books}
               bookCovers={bookCovers}
               bookshelfSettings={{
+                setBooks,
                 handleDeleteBook,
                 handleSelectedBook,
                 handleCollectBook,
